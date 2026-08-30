@@ -17,8 +17,8 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="format-detection" content="telephone=no"/>
-  <meta name="apple-mobile-web-app-title" content="德扑之星"/>
-  <title>德扑之星</title>
+  <meta name="apple-mobile-web-app-title" content="菠萝的在线竞技PLUS"/>
+  <title>菠萝的在线竞技PLUS</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -378,8 +378,8 @@
         <div class="flex items-center justify-center gap-1.5 py-0.5">
           <div class="w-6 h-6 rounded-full border border-slate-400 flex items-center justify-center font-black text-slate-300 text-xs">♠</div>
           <div class="flex flex-col items-start leading-none">
-            <span class="text-base font-black tracking-widest text-slate-200">德扑之星</span>
-            <span class="text-[7px] font-poker tracking-widest text-slate-400">DEPUZHIXING</span>
+            <span class="text-base font-black tracking-widest text-slate-200">菠萝的在线竞技PLUS</span>
+            <span class="text-[7px] font-poker tracking-widest text-slate-400">BOLUO ARENA PLUS</span>
           </div>
         </div>
 
@@ -988,7 +988,7 @@
         <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center font-poker text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/30">
           ♠
         </div>
-        <h2 class="text-xl font-extrabold text-white">德扑之星 Pro 大厅</h2>
+        <h2 class="text-xl font-extrabold text-white">菠萝的在线竞技PLUS 大厅</h2>
         <p class="text-xs text-slate-400">选择游戏模式 · 纯 4 位数字房间码极速畅玩</p>
       </div>
 
@@ -1118,7 +1118,7 @@
           document.getElementById('input-room-code').value = roomQuery.trim();
           // 如果好友通过链接进入，弹出好友昵称设置弹窗
           setTimeout(() => {
-            const guestName = prompt(`【德扑之星】您正在加入房间 [${roomQuery.trim()}]\n请输入您的玩家昵称:`, this.playerName !== '菠萝无敌' ? this.playerName : '选手_' + Math.floor(Math.random()*900 + 100));
+            const guestName = prompt(`【菠萝的在线竞技PLUS】您正在加入房间 [${roomQuery.trim()}]\n请输入您的玩家昵称:`, this.playerName !== '菠萝无敌' ? this.playerName : '选手_' + Math.floor(Math.random()*900 + 100));
             if (guestName && guestName.trim()) {
               this.playerName = guestName.trim();
               this.saveUserSession();
@@ -1270,7 +1270,7 @@
       copyRoomCodeOnly() {
         const roomId = this.tableState ? this.tableState.id : '';
         const roomName = this.tableState ? this.tableState.name : 'poker';
-        const text = `【德扑之星】房名: ${roomName} | 4位数字房号: ${roomId} ，在网页输入房号直接进房开打！`;
+        const text = `【菠萝的在线竞技PLUS】房名: ${roomName} | 4位数字房号: ${roomId} ，在网页输入房号直接进房开打！`;
         navigator.clipboard.writeText(text).then(() => this.showToast('已复制 4 位房号发微信！', 'success')).catch(() => prompt('请复制房号：', roomId));
       }
 
