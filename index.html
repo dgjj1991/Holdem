@@ -1559,11 +1559,6 @@
         this.showToast('已清空最近常玩房间记录', 'info');
       }
 
-      quickJoinRoom(roomId) {
-        document.getElementById('input-room-code').value = roomId;
-        this.joinOnlineRoom();
-      }
-
       changePlayerName() {
         const newName = prompt('请输入您的新玩家昵称:', this.playerName);
         if (newName && newName.trim()) {
@@ -1855,8 +1850,13 @@
         });
       }
 
-      joinOnlineRoom() {
-        const roomCode = document.getElementById('input-room-code').value.trim();
+      quickJoinRoom(roomId) {
+        document.getElementById('input-room-code').value = roomId;
+        this.joinOnlineRoom(roomId);
+      }
+
+      joinOnlineRoom(targetRoomId) {
+        const roomCode = (targetRoomId || document.getElementById('input-room-code').value).toString().trim();
         if (!roomCode || roomCode.length < 4) { this.showToast('请输入 4 位纯数字房间码', 'error'); return; }
         this.playerName = document.getElementById('input-player-name').value.trim() || '菠萝无敌';
         this.saveUserSession();
@@ -1868,14 +1868,26 @@
               const rBlinds = (res.tableState && res.tableState.smallBlind) ? `${res.tableState.smallBlind}/${res.tableState.bigBlind}` : '10/20';
               this.saveRecentRoom(roomCode, rName, rBlinds);
               this.hideLobbyModal();
-              const emptyIdx = res.tableState.seats.findIndex(s => s === null);
-              if (emptyIdx !== -1) {
-                this.socket.emit('sit_down', {
-                  seatIndex: emptyIdx,
-                  player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
-                }, () => {});
+              this.showToast(`成功进入房间 [${roomCode}]！`, 'success');
+
+              // 如果玩家原本不在桌上，自动找空位坐下
+              const alreadySeated = res.tableState.seats.some(s => s && s.id === this.playerId);
+              if (!alreadySeated) {
+                const emptyIdx = res.tableState.seats.findIndex(s => s === null);
+                if (emptyIdx !== -1) {
+                  this.socket.emit('sit_down', {
+                    seatIndex: emptyIdx,
+                    player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
+                  }, () => {});
+                }
               }
-            } else this.showToast(res ? res.msg : '4 位房间码不存在', 'error');
+            } else {
+              const errMsg = res ? res.msg : '4 位房间码不存在或已解散';
+              this.showToast(errMsg, 'error');
+              if (confirm(`房间 [${roomCode}] 当前未在运行或已解散。\n是否立即为您重新创建该私人房间开打？`)) {
+                this.createOnlineRoom('CASH');
+              }
+            }
           });
         });
       }
