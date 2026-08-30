@@ -45,9 +45,29 @@
     .font-poker { font-family: 'Cinzel', serif; }
     .font-mono-code { font-family: 'JetBrains Mono', monospace; }
 
-    /* 菠萝竞技场深蓝灰哑光质感桌面 */
+    /* 4 大个性化主题皮肤 */
     .bl-arena-table-bg {
-      background: radial-gradient(circle at 50% 45%, #24415a 0%, #1a3043 55%, #101e2c 100%);
+      transition: background 0.3s ease;
+    }
+    .theme-blue { background: radial-gradient(circle at 50% 45%, #24415a 0%, #1a3043 55%, #101e2c 100%) !important; }
+    .theme-green { background: radial-gradient(circle at 50% 45%, #165b44 0%, #104231 55%, #08261c 100%) !important; }
+    .theme-black { background: radial-gradient(circle at 50% 45%, #27272a 0%, #18181b 55%, #09090b 100%) !important; }
+    .theme-purple { background: radial-gradient(circle at 50% 45%, #4c1d95 0%, #2e1065 55%, #170738 100%) !important; }
+
+    /* 道具飞行动画 */
+    @keyframes prop-flight {
+      0% { transform: translate(0, 0) scale(0.6) rotate(0deg); opacity: 0; }
+      15% { opacity: 1; transform: scale(1.3) rotate(45deg); }
+      85% { opacity: 1; transform: scale(1.1) rotate(270deg); }
+      100% { transform: scale(1.8) rotate(360deg); opacity: 0; }
+    }
+    .prop-fly-item {
+      position: absolute;
+      pointer-events: none;
+      z-index: 60;
+      transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+      font-size: 32px;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
     }
 
     /* 空座矩形 */
@@ -523,7 +543,7 @@
 
     <!-- 右侧两金线图标：聊天气泡 💬 + 麦克风语音 🎙️ -->
     <div class="flex items-center gap-4">
-      <button onclick="app.toggleDanmakuInput()" class="p-1 text-amber-400 hover:text-amber-300 transition active:scale-95 flex flex-col items-center">
+      <button onclick="document.getElementById('modal-quick-chat').classList.remove('hidden')" class="p-1 text-amber-400 hover:text-amber-300 transition active:scale-95 flex flex-col items-center">
         <i data-lucide="message-square" class="w-6 h-6 stroke-[2.2]"></i>
       </button>
 
@@ -858,13 +878,90 @@
           <input type="checkbox" checked class="accent-amber-400 w-4 h-4">
         </div>
 
+        <div class="space-y-1.5 p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
+          <div class="font-bold text-white">牌桌主题皮肤</div>
+          <div class="grid grid-cols-4 gap-1.5 pt-1 text-[11px] font-bold">
+            <button onclick="app.setTableTheme('blue')" class="py-1.5 rounded-lg bg-[#24415a] border border-blue-400 text-white text-center shadow">深海蓝</button>
+            <button onclick="app.setTableTheme('green')" class="py-1.5 rounded-lg bg-[#165b44] border border-emerald-400 text-white text-center shadow">赌城绿</button>
+            <button onclick="app.setTableTheme('black')" class="py-1.5 rounded-lg bg-[#27272a] border border-slate-400 text-white text-center shadow">黑金尊</button>
+            <button onclick="app.setTableTheme('purple')" class="py-1.5 rounded-lg bg-[#4c1d95] border border-purple-400 text-white text-center shadow">霓虹紫</button>
+          </div>
+        </div>
+
         <div class="flex items-center justify-between p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
           <div>
-            <div class="font-bold text-white">声音音效</div>
-            <div class="text-[10px] text-slate-400">发牌、加注、All-in 专属音效</div>
+            <div class="font-bold text-white">真实立体声音效</div>
+            <div class="text-[10px] text-slate-400">发牌、筹码碰撞、All-in 专属音效</div>
           </div>
-          <input type="checkbox" checked class="accent-amber-400 w-4 h-4">
+          <input type="checkbox" id="setting-sound" checked onchange="app.soundEnabled = this.checked" class="accent-amber-400 w-4 h-4">
         </div>
+
+        <div class="flex items-center justify-between p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
+          <div>
+            <div class="font-bold text-white">手机震动反馈</div>
+            <div class="text-[10px] text-slate-400">行动、All-in 触感震动</div>
+          </div>
+          <input type="checkbox" id="setting-vibrate" checked onchange="app.vibrateEnabled = this.checked" class="accent-amber-400 w-4 h-4">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗：【互动道具轮盘】 ================= -->
+  <div id="modal-interactive-props" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-xs rounded-3xl p-5 shadow-2xl space-y-3 text-center">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <h3 class="text-xs font-bold text-amber-300">向 <span id="prop-target-name" class="text-white font-extrabold">选手</span> 互动</h3>
+        <button onclick="document.getElementById('modal-interactive-props').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2.5 pt-1">
+        <button onclick="app.sendProp('tomato')" class="flex flex-col items-center gap-1 p-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition border border-slate-700">
+          <span class="text-3xl">🍅</span>
+          <span class="text-[10px] font-bold text-slate-300">扔番茄</span>
+        </button>
+        <button onclick="app.sendProp('beer')" class="flex flex-col items-center gap-1 p-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition border border-slate-700">
+          <span class="text-3xl">🍺</span>
+          <span class="text-[10px] font-bold text-slate-300">敬啤酒</span>
+        </button>
+        <button onclick="app.sendProp('bomb')" class="flex flex-col items-center gap-1 p-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition border border-slate-700">
+          <span class="text-3xl">💣</span>
+          <span class="text-[10px] font-bold text-slate-300">扔炸弹</span>
+        </button>
+        <button onclick="app.sendProp('water')" class="flex flex-col items-center gap-1 p-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition border border-slate-700">
+          <span class="text-3xl">💦</span>
+          <span class="text-[10px] font-bold text-slate-300">泼冷水</span>
+        </button>
+        <button onclick="app.sendProp('rose')" class="flex flex-col items-center gap-1 p-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition border border-slate-700">
+          <span class="text-3xl">🌹</span>
+          <span class="text-[10px] font-bold text-slate-300">送鲜花</span>
+        </button>
+        <button onclick="app.sendProp('clap')" class="flex flex-col items-center gap-1 p-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition border border-slate-700">
+          <span class="text-3xl">👏</span>
+          <span class="text-[10px] font-bold text-slate-300">为你鼓掌</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗：【快捷台词短语】 ================= -->
+  <div id="modal-quick-chat" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-xs rounded-3xl p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <h3 class="text-xs font-bold text-white">快捷对局语音台词</h3>
+        <button onclick="document.getElementById('modal-quick-chat').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-1.5 text-xs font-bold">
+        <button onclick="app.sendQuickPhrase('🔥 搏一搏，单车变摩托！')" class="w-full text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-300 border border-slate-700">🔥 搏一搏，单车变摩托！</button>
+        <button onclick="app.sendQuickPhrase('🤔 加注这么大，是不是在偷池？')" class="w-full text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700">🤔 加注这么大，是不是在偷池？</button>
+        <button onclick="app.sendQuickPhrase('🎯 这手牌太稳了，根本忍不住！')" class="w-full text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-emerald-300 border border-slate-700">🎯 这手牌太稳了，根本忍不住！</button>
+        <button onclick="app.sendQuickPhrase('🌊 河牌有毒，这都能反绝杀？')" class="w-full text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-rose-300 border border-slate-700">🌊 河牌有毒，这都能反绝杀？</button>
+        <button onclick="app.sendQuickPhrase('☕ 各位慢点打，我先喝杯咖啡。')" class="w-full text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700">☕ 各位慢点打，我先喝杯咖啡。</button>
       </div>
     </div>
   </div>
@@ -1065,7 +1162,173 @@
         this.isMicOn = false;
         this.matchExtraTimeMap = [0, 15, 30, 60, 90, 120];
         this.matchBuyInLimitMap = ['无限制', '8K', '12K', '16K', '20K', '30K'];
+        this.soundEnabled = true;
+        this.vibrateEnabled = true;
+        this.currentTheme = localStorage.getItem('table_theme') || 'blue';
+        this.propTargetSeat = null;
+        this.audioCtx = null;
         this.loadUserSession();
+      }
+
+      initAudio() {
+        if (!this.audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.audioCtx = new AudioContext();
+        }
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume();
+        }
+      }
+
+      playSound(type) {
+        if (!this.soundEnabled) return;
+        try {
+          this.initAudio();
+          if (!this.audioCtx) return;
+          const ctx = this.audioCtx;
+          const now = ctx.currentTime;
+
+          if (type === 'deal') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(120, now + 0.08);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+          } else if (type === 'chip') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.06);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.06);
+          } else if (type === 'allIn') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(600, now + 0.3);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.3);
+          } else if (type === 'win') {
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(freq, now + i * 0.07);
+              gain.gain.setValueAtTime(0.3, now + i * 0.07);
+              gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.07 + 0.2);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now + i * 0.07);
+              osc.stop(now + i * 0.07 + 0.2);
+            });
+          }
+        } catch (e) {}
+      }
+
+      vibrate(pattern = 40) {
+        if (this.vibrateEnabled && navigator.vibrate) {
+          try { navigator.vibrate(pattern); } catch (e) {}
+        }
+      }
+
+      setTableTheme(theme) {
+        this.currentTheme = theme;
+        localStorage.setItem('table_theme', theme);
+        const main = document.querySelector('main');
+        if (main) {
+          main.className = main.className.replace(/theme-\w+/g, '').trim() + ` theme-${theme}`;
+        }
+        this.showToast(`已切换为【${theme === 'blue' ? '深海蓝' : (theme === 'green' ? '赌城绿' : (theme === 'black' ? '黑金尊' : '霓虹紫'))}】皮肤！`, 'success');
+      }
+
+      openPropModal(targetSeatIdx, targetName) {
+        if (!this.tableState) return;
+        const mySeat = this.tableState.seats.find(s => s && s.id === this.playerId);
+        if (!mySeat) { this.showToast('请先就座后再使用互动道具', 'error'); return; }
+        if (targetSeatIdx === mySeat.seatIndex) { this.showToast('不能对自己扔道具哦', 'info'); return; }
+
+        this.propTargetSeat = targetSeatIdx;
+        document.getElementById('prop-target-name').innerText = targetName;
+        document.getElementById('modal-interactive-props').classList.remove('hidden');
+      }
+
+      sendProp(propType) {
+        if (!this.tableState || this.propTargetSeat === null) return;
+        const mySeat = this.tableState.seats.find(s => s && s.id === this.playerId);
+        if (!mySeat) return;
+
+        if (this.socket) {
+          this.socket.emit('send_interactive_prop', {
+            fromSeat: mySeat.seatIndex,
+            toSeat: this.propTargetSeat,
+            propType: propType
+          }, () => {
+            document.getElementById('modal-interactive-props').classList.add('hidden');
+          });
+        }
+      }
+
+      playPropAnimation(fromSeat, toSeat, propType) {
+        const propEmojis = { tomato: '🍅', beer: '🍺', bomb: '💣', water: '💦', rose: '🌹', clap: '👏' };
+        const emoji = propEmojis[propType] || '🍅';
+        this.playSound('chip');
+        this.vibrate(50);
+
+        const sc = document.getElementById('seats-container');
+        if (!sc) return;
+
+        const coords = [
+          { top: 10, left: 35 }, { top: 10, left: 65 }, { top: 25, left: 88 },
+          { top: 48, left: 88 }, { top: 70, left: 88 }, { top: 70, left: 12 },
+          { top: 48, left: 12 }, { top: 25, left: 12 }, { top: 91, left: 50 }
+        ];
+
+        const from = coords[fromSeat] || { top: 50, left: 50 };
+        const to = coords[toSeat] || { top: 50, left: 50 };
+
+        const el = document.createElement('div');
+        el.className = 'prop-fly-item';
+        el.innerText = emoji;
+        el.style.top = `${from.top}%`;
+        el.style.left = `${from.left}%`;
+        sc.appendChild(el);
+
+        requestAnimationFrame(() => {
+          el.style.top = `${to.top}%`;
+          el.style.left = `${to.left}%`;
+          el.style.transform = 'scale(1.6) rotate(360deg)';
+        });
+
+        setTimeout(() => {
+          if (window.confetti && (propType === 'rose' || propType === 'beer')) {
+            window.confetti({ particleCount: 30, spread: 60, origin: { x: to.left / 100, y: to.top / 100 } });
+          }
+          el.remove();
+        }, 750);
+      }
+
+      sendQuickPhrase(text) {
+        if (this.socket) {
+          this.socket.emit('send_danmaku', { text: text, senderName: this.playerName });
+          document.getElementById('modal-quick-chat').classList.add('hidden');
+          this.showToast('快捷语音已发送！', 'success');
+        }
       }
 
       showToast(text, type = 'info') {
@@ -1126,6 +1389,11 @@
             }
             this.joinOnlineRoom();
           }, 300);
+        }
+        const savedTheme = localStorage.getItem('table_theme') || 'blue';
+        const main = document.querySelector('main');
+        if (main) {
+          main.className = main.className.replace(/theme-\w+/g, '').trim() + ` theme-${savedTheme}`;
         }
         if (window.lucide) lucide.createIcons();
       }
@@ -1339,6 +1607,9 @@
         this.socket.on('connect', () => { if (callback) callback(); });
         this.socket.on('table_update', (state) => this.renderTable(state));
         this.socket.on('new_danmaku', (data) => this.spawnDanmakuElement(data));
+        this.socket.on('play_interactive_prop', (data) => {
+          this.playPropAnimation(data.fromSeat, data.toSeat, data.propType);
+        });
         this.socket.on('broadcast_27_effect', ({ winnerName }) => {
           if (window.confetti) window.confetti({ particleCount: 160, spread: 110 });
           this.spawnDanmakuElement({ text: `🔥【2-7 绝杀】玩家 [${winnerName}] 凭 2-7 绝世炸穿全场！`, sender: '牌桌系统', color: '#fbbf24' });
@@ -1620,13 +1891,13 @@
                     </div>
                   ` : '')))}
 
-                  <!-- 1:1 原版头像 + 嵌合记分牌条 + 绿色倒计时全覆盖 -->
-                  <div class="dpzx-player-card ${isActor ? 'dpzx-acting-card' : ''} ${p.folded || p.sittingOut ? 'opacity-30 grayscale' : ''}">
+                  <!-- 头像 + 嵌合记分牌条 + 绿色倒计时全覆盖 (点击对手头像可扔道具) -->
+                  <div onclick="${!isSelf ? `app.openPropModal(${i}, '${p.name}')` : ''}" class="bl-arena-player-card ${isActor ? 'bl-arena-acting-card' : ''} ${p.folded || p.sittingOut ? 'opacity-30 grayscale' : ''} ${!isSelf ? 'cursor-pointer hover:border-amber-400' : ''}">
                     <img src="${p.avatar}" class="w-full h-full object-cover">
-                    <div class="dpzx-player-chip-bar">${p.chips.toLocaleString()}</div>
+                    <div class="bl-arena-player-chip-bar">${p.chips.toLocaleString()}</div>
                     
                     ${isActor ? `
-                      <div class="dpzx-acting-overlay">
+                      <div class="bl-arena-acting-overlay">
                         <span>${state.actionTimeRemaining}S</span>
                       </div>
                     ` : ''}
@@ -1638,6 +1909,14 @@
                   <!-- 🎴 关键：手牌直接立在头像右侧 (清晰、完全不遮挡，比牌时公开全场亮牌) -->
                   ${p.holeCards && p.holeCards.length >= 2 && (isSelf || p.holeCards.some(c => !c.isHidden)) ? `
                     <div class="ml-1.5 flex flex-col items-center">
+                      
+                      <!-- ⚡ All-in 职业级实时胜率 HUD 胶囊 -->
+                      ${p.equity ? `
+                        <div class="px-1.5 py-0.2 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 text-[9px] font-black shadow-lg animate-pulse mb-0.5 tracking-tight flex items-center gap-0.5">
+                          <span>⚡</span><span>${p.equity}</span>
+                        </div>
+                      ` : ''}
+
                       <div class="flex items-center gap-1">
                         ${p.holeCards.map(c => c.isHidden ? `
                           <div class="w-7 h-10 md:w-8 md:h-12 bg-indigo-950 rounded shadow-md border border-indigo-500/60 flex items-center justify-center text-xs text-indigo-300 font-bold select-none">

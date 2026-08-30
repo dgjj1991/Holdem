@@ -204,6 +204,53 @@ function evaluateHand(cards) {
   return best;
 }
 
+// 蒙特卡洛/全排列实时胜率计算器 (All-in Equity Calculator)
+function calculateAllInEquities(playersInAllIn, communityCards, deckCards) {
+  const remainingNeed = 5 - communityCards.length;
+  if (remainingNeed < 0 || playersInAllIn.length < 2) return {};
+
+  const knownCards = new Set();
+  communityCards.forEach(c => knownCards.add(c.toString()));
+  playersInAllIn.forEach(p => p.holeCards.forEach(c => knownCards.add(c.toString())));
+
+  const availableDeck = deckCards.filter(c => !knownCards.has(c.toString()));
+  const wins = {};
+  playersInAllIn.forEach(p => wins[p.id] = 0);
+  const simulations = 400;
+
+  for (let sim = 0; sim < simulations; sim++) {
+    const drawn = [];
+    const pool = [...availableDeck];
+    for (let k = 0; k < remainingNeed; k++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      drawn.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+    const simCommunity = [...communityCards, ...drawn];
+    let bestScore = null;
+    let winners = [];
+    for (const p of playersInAllIn) {
+      const full = [...p.holeCards, ...simCommunity];
+      const evalRes = evaluateHand(full);
+      if (!bestScore || compareScores(evalRes.score, bestScore) > 0) {
+        bestScore = evalRes.score;
+        winners = [p.id];
+      } else if (compareScores(evalRes.score, bestScore) === 0) {
+        winners.push(p.id);
+      }
+    }
+    winners.forEach(wId => {
+      wins[wId] += 1 / winners.length;
+    });
+  }
+
+  const equities = {};
+  playersInAllIn.forEach(p => {
+    equities[p.id] = Math.round((wins[p.id] / simulations) * 100) + '%';
+  });
+  return equities;
+}
+
 // ================= 边池分配 =================
 class PotManager {
   static calculatePots(contributors) {
@@ -1068,6 +1115,13 @@ class PokerTable {
 
   getPublicState(viewerId) {
     const isHost = this.hostId === viewerId;
+    const inHand = this.getInHandSeats();
+    const allInPlayers = inHand.filter(it => it.p.allIn || inHand.filter(h => !h.p.allIn).length <= 1).map(it => it.p);
+    let equities = {};
+    if (allInPlayers.length >= 2 && this.stage !== 'IDLE' && this.stage !== 'END_HAND') {
+      equities = calculateAllInEquities(allInPlayers, this.communityCards, this.deck.cards);
+    }
+
     return {
       id: this.id,
       hostId: this.hostId,
@@ -1099,8 +1153,9 @@ class PokerTable {
         const isSelf = p.id === viewerId;
         const isWinner = this.handWinners && this.handWinners.some(w => w.playerId === p.id);
         const isShowdown = this.stage === 'SHOWDOWN' || this.stage === 'END_HAND';
-        const revealLeft = isSelf || isWinner || p.revealedCards[0] || (isShowdown && !p.folded);
-        const revealRight = isSelf || isWinner || p.revealedCards[1] || (isShowdown && !p.folded);
+        const hasEquity = Boolean(equities[p.id]);
+        const revealLeft = isSelf || isWinner || hasEquity || p.revealedCards[0] || (isShowdown && !p.folded);
+        const revealRight = isSelf || isWinner || hasEquity || p.revealedCards[1] || (isShowdown && !p.folded);
         return {
           seatIndex: idx,
           id: p.id,
@@ -1114,6 +1169,7 @@ class PokerTable {
           allIn: p.allIn,
           sittingOut: p.sittingOut,
           isOnline: p.isOnline !== false,
+          equity: equities[p.id] || null,
           leaveNextHand: p.leaveNextHand,
           timeBank: p.timeBank,
           autoMuck: p.autoMuck,
@@ -1360,6 +1416,17 @@ io.on('connection', socket => {
     const res = room.table.playerAction(currentPlayerId, action, amount);
     if (callback) callback(res);
     checkBotTurn(currentRoomId);
+  });
+
+  socket.on('send_interactive_prop', ({ fromSeat, toSeat, propType }, callback) => {
+    if (!currentRoomId) return;
+    io.to(currentRoomId).emit('play_interactive_prop', {
+      fromSeat,
+      toSeat,
+      propType,
+      senderId: currentPlayerId
+    });
+    if (callback) callback({ success: true });
   });
 
   socket.on('disconnect', () => {
