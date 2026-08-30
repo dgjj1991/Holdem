@@ -619,6 +619,16 @@ class PokerTable {
     return { success: true, leaveNextHand: p.leaveNextHand };
   }
 
+  toggleShowCardIntent(playerId, cardIndex, isSelected) {
+    const p = this.seats.find(s => s && s.id === playerId);
+    if (!p) return { success: false };
+    if (!p.showCardIntent) p.showCardIntent = [false, false];
+    const idx = parseInt(cardIndex, 10);
+    p.showCardIntent[idx] = isSelected !== undefined ? isSelected : !p.showCardIntent[idx];
+    this.notify();
+    return { success: true, showCardIntent: p.showCardIntent };
+  }
+
   showCards(playerId, which = 'both') {
     const p = this.seats.find(s => s && s.id === playerId);
     if (!p || p.holeCards.length < 2) return { success: false };
@@ -798,6 +808,7 @@ class PokerTable {
         p.hasActed = false;
         p.lastAction = null;
         p.revealedCards = [false, false];
+        p.showCardIntent = [false, false];
         p.is27Hand = false;
         if (!p.folded && this.playerStatsMap[p.id]) this.playerStatsMap[p.id].played++;
       }
@@ -1066,6 +1077,14 @@ class PokerTable {
       this.log(`🔥 玩家 [${winner.name}] 手持 2-7 炸穿全场！可触发 2/7 绝杀炸场特效！`);
     }
 
+    // 自动应用所有玩家预选的单张或双手牌亮牌意图
+    this.seats.forEach(p => {
+      if (p && p.showCardIntent) {
+        if (p.showCardIntent[0]) p.revealedCards[0] = true;
+        if (p.showCardIntent[1]) p.revealedCards[1] = true;
+      }
+    });
+
     this.recordHandResult();
     this.log(`🏆 玩家 [${winner.name}] 赢得底池 ${this.pot} 记分牌`);
     this.finishHand();
@@ -1245,6 +1264,7 @@ class PokerTable {
           handDescription: realHandDesc,
           is27: isSelf ? p.is27Hand : false,
           revealedCards: p.revealedCards,
+          showCardIntent: isSelf ? (p.showCardIntent || [false, false]) : undefined,
           holeCards: [
             p.holeCards[0] ? (canRevealLeft ? p.holeCards[0].toJSON() : { isHidden: true }) : null,
             p.holeCards[1] ? (canRevealRight ? p.holeCards[1].toJSON() : { isHidden: true }) : null
@@ -1436,6 +1456,14 @@ io.on('connection', socket => {
       }
       callback(res);
     }
+  });
+
+  socket.on('toggle_show_card_intent', ({ cardIndex, isSelected }, callback) => {
+    if (!currentRoomId || !currentPlayerId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+    const res = room.table.toggleShowCardIntent(currentPlayerId, cardIndex, isSelected);
+    if (callback) callback(res);
   });
 
   socket.on('trigger_27_effect', callback => {

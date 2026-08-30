@@ -150,6 +150,32 @@
       border-color: transparent transparent transparent inherit;
     }
 
+    /* 单张手牌预选秀牌高亮浮起与金色流光 */
+    .card-selected-to-show {
+      transform: translateY(-6px) scale(1.06) !important;
+      border: 2px solid #f59e0b !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.95), 0 8px 16px rgba(0, 0, 0, 0.6) !important;
+      position: relative;
+      z-index: 30;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .card-selected-to-show::after {
+      content: '👀 亮';
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #020617;
+      font-size: 8px;
+      font-weight: 900;
+      padding: 0 4px;
+      border-radius: 4px;
+      line-height: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      border: 1px solid #ffffff;
+      pointer-events: none;
+    }
+
     /* 行动倒计时发光呼吸边框与头像中心大倒计时 */
     @keyframes actor-green-pulse {
       0%, 100% { border-color: #22c55e; box-shadow: 0 0 14px rgba(34, 197, 94, 0.95); }
@@ -1682,6 +1708,19 @@
         navigator.clipboard.writeText(text).then(() => this.showToast('已复制 4 位房号发微信！', 'success')).catch(() => prompt('请复制房号：', roomId));
       }
 
+      toggleShowCardSelection(cardIdx) {
+        this.playSound('chip');
+        this.vibrate(35);
+        if (this.socket) {
+          this.socket.emit('toggle_show_card_intent', { cardIndex: cardIdx }, (res) => {
+            if (res && res.success) {
+              const isSelected = res.showCardIntent[cardIdx];
+              this.showToast(isSelected ? `已选中第 ${cardIdx + 1} 张牌，局末将自动亮出！` : `已取消第 ${cardIdx + 1} 张牌的亮牌`, 'info');
+            }
+          });
+        }
+      }
+
       copyRoomLinkOnly() {
         const roomId = this.tableState ? this.tableState.id : '';
         const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
@@ -2055,8 +2094,11 @@
           { top: '91%', left: '50%' }   // 8: 正底部专属主座 (Hero)
         ];
 
+        const mySeatIndex = state.seats.findIndex(s => s && s.id === this.playerId);
+
         for (let i = 0; i < 9; i++) {
-          const coord = seatCoords[i];
+          const screenIndex = mySeatIndex !== -1 ? ((i - mySeatIndex + 8 + 9) % 9) : i;
+          const coord = seatCoords[screenIndex];
           const p = state.seats[i];
 
           if (p) {
@@ -2113,7 +2155,7 @@
                   <!-- 庄家 D 标 -->
                   ${isD ? '<span class="absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 text-[9px] font-black flex items-center justify-center shadow-lg border border-white">D</span>' : ''}
 
-                  <!-- 🎴 关键：手牌直接立在头像右侧 (清晰、完全不遮挡，比牌时公开全场亮牌) -->
+                  <!-- 🎴 关键：手牌直接立在头像右侧 (清晰、完全不遮挡，支持点击预选单张秀牌) -->
                   ${p.holeCards && p.holeCards.length >= 2 && (isSelf || p.holeCards.some(c => !c.isHidden)) ? `
                     <div class="ml-1.5 flex flex-col items-center">
                       
@@ -2125,17 +2167,23 @@
                       ` : ''}
 
                       <div class="flex items-center gap-1">
-                        ${p.holeCards.map(c => c.isHidden ? `
-                          <div class="w-7 h-10 md:w-8 md:h-12 bg-indigo-950 rounded shadow-md border border-indigo-500/60 flex items-center justify-center text-xs text-indigo-300 font-bold select-none">
-                            ♠
-                          </div>
-                        ` : `
-                          <div class="w-7 h-10 md:w-8 md:h-12 bg-white rounded shadow-md border ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'border-amber-400 ring-2 ring-amber-400' : 'border-slate-300'} flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} select-none">
-                            <div class="text-[9px] leading-none font-mono-code">${c.label}</div>
-                            <div class="text-xs text-center leading-none">${c.symbol}</div>
-                            <div class="text-[9px] leading-none text-right font-mono-code">${c.label}</div>
-                          </div>
-                        `).join('')}
+                        ${p.holeCards.map((c, cardIdx) => {
+                          const isCardIntentSelected = isSelf && p.showCardIntent && p.showCardIntent[cardIdx];
+                          if (c.isHidden) {
+                            return `
+                              <div class="w-7 h-10 md:w-8 md:h-12 bg-indigo-950 rounded shadow-md border border-indigo-500/60 flex items-center justify-center text-xs text-indigo-300 font-bold select-none">
+                                ♠
+                              </div>
+                            `;
+                          }
+                          return `
+                            <div onclick="${isSelf ? `app.toggleShowCardSelection(${cardIdx})` : ''}" class="w-7 h-10 md:w-8 md:h-12 bg-white rounded shadow-md border ${isCardIntentSelected ? 'card-selected-to-show' : (state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'border-amber-400 ring-2 ring-amber-400' : 'border-slate-300')} flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} select-none ${isSelf ? 'cursor-pointer hover:border-amber-400' : ''}">
+                              <div class="text-[9px] leading-none font-mono-code">${c.label}</div>
+                              <div class="text-xs text-center leading-none">${c.symbol}</div>
+                              <div class="text-[9px] leading-none text-right font-mono-code">${c.label}</div>
+                            </div>
+                          `;
+                        }).join('')}
                       </div>
                       ${p.handDescription ? `
                         <div class="text-[9px] font-extrabold ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'text-amber-300 bg-amber-950/80 border-amber-500/50' : 'text-slate-200 bg-slate-900/90 border-slate-700/60'} px-2 py-0.2 rounded-full border mt-0.5 shadow select-none">
