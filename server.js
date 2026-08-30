@@ -1585,26 +1585,14 @@ io.on('connection', socket => {
       table.notify();
     }
 
-    // 延迟 45 秒：如果玩家 45 秒内未重连回来，自动站起离座释放座位给他人！
+    // 延迟 45 秒：如果玩家 45 秒内未重连回来，将其标记为暂离保位，座位与筹码完整保留！
     setTimeout(() => {
       const currentRoom = rooms.get(currentRoomId);
       if (currentRoom) {
         const liveP = currentRoom.table.seats[seatIdx];
         if (liveP && liveP.id === currentPlayerId && liveP.isOnline === false) {
-          currentRoom.table.log(`🚪 离线玩家 [${liveP.name}] 超时未归，系统自动将其请离座位释放空座`);
-          currentRoom.table.standUp(currentPlayerId);
-
-          // 若整桌已经完全空无一人，且无真人在线，15 分钟后自动销毁释放房间
-          const remainingReal = currentRoom.table.seats.filter(s => s && !s.isBot);
-          if (remainingReal.length === 0) {
-            setTimeout(() => {
-              const checkRoom = rooms.get(currentRoomId);
-              if (checkRoom && checkRoom.table.seats.filter(s => s && !s.isBot).length === 0) {
-                checkRoom.table.destroy();
-                rooms.delete(currentRoomId);
-              }
-            }, 15 * 60 * 1000);
-          }
+          currentRoom.table.log(`💤 玩家 [${liveP.name}] 处于离线暂离保位状态（房间在有效时间内持续保活，随时可回桌继续）`);
+          currentRoom.table.notify();
         }
       }
     }, 45000);
