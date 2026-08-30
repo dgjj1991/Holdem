@@ -1777,6 +1777,9 @@
           if (res && res.success) this.showToast(res.isPaused ? '牌局已暂停' : '牌局已开始！', 'success');
         });
       }
+      hostTogglePause() {
+        this.hostStartOrResume();
+      }
       hostEndGame() {
         if (confirm('确认解散比赛并生成【比赛详情】结算大报表吗？')) {
           if (this.socket) this.socket.emit('end_game_session', () => {});
