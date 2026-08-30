@@ -1665,9 +1665,21 @@ io.on('connection', socket => {
       const res = room.table.endGameSession(currentPlayerId);
       if (res.success) {
         io.to(currentRoomId).emit('broadcast_game_summary', { summary: res.summary });
+        io.to(currentRoomId).emit('room_dissolved', { roomId: currentRoomId, summary: res.summary });
+        rooms.delete(currentRoomId);
+        saveRoomsToDisk();
       }
       callback(res);
     }
+  });
+
+  socket.on('filter_active_rooms', ({ roomIds }, callback) => {
+    if (!Array.isArray(roomIds)) return callback({ activeIds: [] });
+    const activeIds = roomIds.filter(id => {
+      const r = rooms.get(id.toString().trim());
+      return r && r.table && !r.table.isGameEnded && (!r.table.expireTimestamp || Date.now() < r.table.expireTimestamp);
+    });
+    callback({ activeIds });
   });
 
   socket.on('toggle_show_card_intent', ({ cardIndex, isSelected }, callback) => {

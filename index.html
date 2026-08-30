@@ -1618,34 +1618,64 @@
         } catch (e) {}
       }
 
+      removeRecentRoom(roomId) {
+        try {
+          let list = JSON.parse(localStorage.getItem('poker_recent_rooms') || '[]');
+          list = list.filter(r => r && r.id !== roomId);
+          localStorage.setItem('poker_recent_rooms', JSON.stringify(list));
+          this.renderRecentRooms();
+        } catch (e) {}
+      }
+
       renderRecentRooms() {
         const box = document.getElementById('recent-rooms-box');
         const listEl = document.getElementById('recent-rooms-list');
         if (!box || !listEl) return;
         try {
-          const list = JSON.parse(localStorage.getItem('poker_recent_rooms') || '[]');
+          let list = JSON.parse(localStorage.getItem('poker_recent_rooms') || '[]');
           if (list.length === 0) {
             box.classList.add('hidden');
             return;
           }
-          box.classList.remove('hidden');
-          listEl.innerHTML = list.map(r => `
-            <div onclick="app.quickJoinRoom('${r.id}')" class="flex items-center justify-between p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-[0.98] border border-slate-700/80 cursor-pointer transition shadow">
-              <div class="flex items-center gap-2">
-                <span class="font-mono-code font-black text-amber-400 text-sm bg-slate-950 px-2 py-0.5 rounded-lg border border-amber-500/30">${r.id}</span>
-                <div class="text-left">
-                  <div class="text-xs font-bold text-slate-200 truncate max-w-[110px]">${r.name}</div>
-                  <div class="text-[10px] text-emerald-400 font-mono-code">盲注 ${r.blinds} · ${r.time || ''}</div>
-                </div>
-              </div>
-              <button type="button" class="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-black shadow hover:bg-amber-400">
-                一键回桌 ➔
-              </button>
-            </div>
-          `).join('');
+          
+          this.ensureSocketConnection(() => {
+            this.socket.emit('filter_active_rooms', { roomIds: list.map(r => r.id) }, res => {
+              if (res && Array.isArray(res.activeIds)) {
+                list = list.filter(r => res.activeIds.includes(r.id));
+                localStorage.setItem('poker_recent_rooms', JSON.stringify(list));
+                this.drawRecentRoomsList(list);
+              }
+            });
+          });
+          this.drawRecentRoomsList(list);
         } catch (e) {
           box.classList.add('hidden');
         }
+      }
+
+      drawRecentRoomsList(list) {
+        const box = document.getElementById('recent-rooms-box');
+        const listEl = document.getElementById('recent-rooms-list');
+        if (!box || !listEl) return;
+        if (!list || list.length === 0) {
+          box.classList.add('hidden');
+          return;
+        }
+        box.classList.remove('hidden');
+        listEl.innerHTML = list.map(r => `
+          <div onclick="app.quickJoinRoom('${r.id}')" class="flex items-center justify-between p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-[0.98] border border-slate-700/80 cursor-pointer transition shadow">
+            <div class="flex items-center gap-2">
+              <span class="font-mono-code font-black text-amber-400 text-sm bg-slate-950 px-2 py-0.5 rounded-lg border border-amber-500/30">${r.id}</span>
+              <div class="text-left">
+                <div class="text-xs font-bold text-slate-200 truncate max-w-[110px]">${r.name}</div>
+                <div class="text-[10px] text-emerald-400 font-mono-code">盲注 ${r.blinds} · ${r.time || ''}</div>
+              </div>
+            </div>
+            <button type="button" class="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-black shadow hover:bg-amber-400">
+              一键回桌 ➔
+            </button>
+          </div>
+        `).join('');
       }
 
       clearRecentRooms() {
@@ -2122,6 +2152,9 @@
           this.spawnDanmakuElement({ text: `🔥【2-7 绝杀】玩家 [${winnerName}] 凭 2-7 绝世炸穿全场！`, sender: '牌桌系统', color: '#fbbf24' });
         });
         this.socket.on('broadcast_game_summary', ({ summary }) => this.showSummaryModal(summary));
+        this.socket.on('room_dissolved', (data) => {
+          if (data && data.roomId) this.removeRecentRoom(data.roomId);
+        });
       }
 
       setRoomDuration(minutes, btn) {
@@ -2184,7 +2217,7 @@
         this.saveUserSession();
 
         this.ensureSocketConnection(() => {
-          this.socket.emit('join_room', { roomId: roomCode, player: { id: this.playerId, name: this.playerName }, autoCreateIfNotExist: true }, (res) => {
+          this.socket.emit('join_room', { roomId: roomCode, player: { id: this.playerId, name: this.playerName } }, (res) => {
             if (res && res.success) {
               const rName = (res.tableState && res.tableState.name) ? res.tableState.name : 'poker';
               const rBlinds = (res.tableState && res.tableState.smallBlind) ? `${res.tableState.smallBlind}/${res.tableState.bigBlind}` : '10/20';
@@ -2192,7 +2225,6 @@
               this.hideLobbyModal();
               this.showToast(`成功进入房间 [${roomCode}]！`, 'success');
 
-              // 如果玩家原本不在桌上，自动找空位坐下
               const alreadySeated = res.tableState && res.tableState.seats ? res.tableState.seats.some(s => s && s.id === this.playerId) : false;
               if (!alreadySeated && res.tableState && res.tableState.seats) {
                 const emptyIdx = res.tableState.seats.findIndex(s => s === null);
@@ -2204,8 +2236,8 @@
                 }
               }
             } else {
-              // 自动以该房号秒速拉起并进入
-              this.createOnlineRoom('CASH', roomCode);
+              this.removeRecentRoom(roomCode);
+              this.showToast(`该比赛已解散，已从一键回桌列表中移除`, 'info');
             }
           });
         });
