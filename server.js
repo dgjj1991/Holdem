@@ -1283,7 +1283,22 @@ class PokerTable {
             p.holeCards[1] ? (canRevealRight ? p.holeCards[1].toJSON() : { isHidden: true }) : null
           ].filter(Boolean)
         };
-      })
+      }),
+      handHistory: this.handHistoryList.slice(0, 15),
+      playerStats: Object.values(this.playerStatsMap).map(p => {
+        const liveSeat = this.seats.find(s => s && s.id === p.id);
+        const currentChips = liveSeat ? liveSeat.chips : (p.chips || 0);
+        return {
+          id: p.id,
+          name: p.name,
+          avatar: p.avatar,
+          chips: currentChips,
+          totalBuyIn: p.totalBuyIn,
+          netProfit: currentChips - p.totalBuyIn,
+          played: p.played,
+          wins: p.wins
+        };
+      }).sort((a, b) => b.netProfit - a.netProfit)
     };
   }
 }

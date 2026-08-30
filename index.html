@@ -499,6 +499,46 @@
     <!-- 1:1 原版 9 座绝对坐标环形分布容器 -->
     <div id="seats-container" class="absolute inset-0 pointer-events-none"></div>
 
+    <!-- 📊 左侧悬浮拉手：实时筹码战况 -->
+    <button onclick="app.toggleLeftStatsDrawer()" class="absolute left-0 top-[40%] -translate-y-1/2 z-30 px-1.5 py-3 rounded-r-2xl bg-slate-900/90 hover:bg-slate-850 border-y border-r border-amber-500/50 text-amber-300 shadow-2xl flex flex-col items-center gap-1 text-[11px] font-black backdrop-blur transition-transform active:scale-95 pointer-events-auto">
+      <span>📊</span>
+      <span class="text-[9px] text-slate-300 [writing-mode:vertical-lr] tracking-widest font-extrabold">实时战况</span>
+    </button>
+
+    <!-- 📜 右侧悬浮拉手：过往牌局复盘 -->
+    <button onclick="app.toggleRightHistoryDrawer()" class="absolute right-0 top-[40%] -translate-y-1/2 z-30 px-1.5 py-3 rounded-l-2xl bg-slate-900/90 hover:bg-slate-850 border-y border-l border-blue-500/50 text-blue-300 shadow-2xl flex flex-col items-center gap-1 text-[11px] font-black backdrop-blur transition-transform active:scale-95 pointer-events-auto">
+      <span>📜</span>
+      <span class="text-[9px] text-slate-300 [writing-mode:vertical-lr] tracking-widest font-extrabold">过往牌局</span>
+    </button>
+
+    <!-- 📊 左侧实时筹码抽屉面板 -->
+    <div id="drawer-left-stats" class="hidden fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-slate-950/95 border-r border-slate-700/80 shadow-2xl z-50 flex flex-col backdrop-blur">
+      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-base">📊</span>
+          <span class="text-xs font-black text-amber-400">实时筹码与战况榜</span>
+        </div>
+        <button onclick="app.toggleLeftStatsDrawer()" class="p-1 text-slate-400 hover:text-white text-base leading-none">✕</button>
+      </div>
+      <div id="drawer-stats-content" class="flex-1 p-3 overflow-y-auto space-y-2">
+        <div class="text-center text-xs text-slate-500 py-8">暂无战况数据</div>
+      </div>
+    </div>
+
+    <!-- 📜 右侧过往牌局复盘抽屉面板 -->
+    <div id="drawer-right-history" class="hidden fixed inset-y-0 right-0 w-80 max-w-[85vw] bg-slate-950/95 border-l border-slate-700/80 shadow-2xl z-50 flex flex-col backdrop-blur">
+      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-base">📜</span>
+          <span class="text-xs font-black text-blue-400">过往牌局复盘记录</span>
+        </div>
+        <button onclick="app.toggleRightHistoryDrawer()" class="p-1 text-slate-400 hover:text-white text-base leading-none">✕</button>
+      </div>
+      <div id="drawer-history-content" class="flex-1 p-3 overflow-y-auto space-y-2.5">
+        <div class="text-center text-xs text-slate-500 py-8">暂无过往牌局记录</div>
+      </div>
+    </div>
+
     <!-- ================= 🎯 1:1 原版桌面空隙弧形半圆罗盘操作区 (轮到自己时展现，黄金中位绝无遮挡) ================= -->
     <div id="compass-action-area" class="hidden absolute left-1/2 -translate-x-1/2 bottom-[136px] z-30 pointer-events-auto flex flex-col items-center select-none">
       
@@ -1716,6 +1756,86 @@
         }
       }
 
+      toggleLeftStatsDrawer() {
+        const el = document.getElementById('drawer-left-stats');
+        if (!el) return;
+        const isHidden = el.classList.contains('hidden');
+        if (isHidden) {
+          el.classList.remove('hidden');
+          this.renderLeftStatsDrawer(this.tableState);
+        } else {
+          el.classList.add('hidden');
+        }
+      }
+
+      toggleRightHistoryDrawer() {
+        const el = document.getElementById('drawer-right-history');
+        if (!el) return;
+        const isHidden = el.classList.contains('hidden');
+        if (isHidden) {
+          el.classList.remove('hidden');
+          this.renderRightHistoryDrawer(this.tableState);
+        } else {
+          el.classList.add('hidden');
+        }
+      }
+
+      renderLeftStatsDrawer(state) {
+        const container = document.getElementById('drawer-stats-content');
+        if (!container || !state || !state.playerStats) return;
+        if (state.playerStats.length === 0) {
+          container.innerHTML = `<div class="text-center text-xs text-slate-500 py-8">暂无战况数据</div>`;
+          return;
+        }
+        container.innerHTML = state.playerStats.map((p, idx) => {
+          const isProfit = p.netProfit >= 0;
+          return `
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between shadow">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full ${idx === 0 ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-800 text-slate-400 font-bold'} text-[10px] flex items-center justify-center">${idx + 1}</span>
+                <img src="${p.avatar}" class="w-8 h-8 rounded-full border border-slate-700 object-cover">
+                <div>
+                  <div class="text-xs font-bold text-slate-200 truncate max-w-[90px]">${p.name}</div>
+                  <div class="text-[10px] text-slate-400">带入: ${p.totalBuyIn.toLocaleString()} 🪙</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs font-mono-code font-black text-amber-400">${p.chips.toLocaleString()} 🪙</div>
+                <div class="text-[10px] font-mono-code font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}">
+                  ${isProfit ? '+' : ''}${p.netProfit.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderRightHistoryDrawer(state) {
+        const container = document.getElementById('drawer-history-content');
+        if (!container || !state || !state.handHistory) return;
+        if (state.handHistory.length === 0) {
+          container.innerHTML = `<div class="text-center text-xs text-slate-500 py-8">暂无过往牌局记录</div>`;
+          return;
+        }
+        container.innerHTML = state.handHistory.map(h => `
+          <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 shadow">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-bold text-amber-400 font-mono-code">第 ${h.handNumber} 手</span>
+              <span class="font-mono-code font-bold text-emerald-400">底池: ${h.pot ? h.pot.toLocaleString() : 0} 🪙</span>
+            </div>
+            <div class="text-xs text-slate-200 font-bold">
+              ${h.winners && h.winners.length > 0 ? `🏆 ${h.winners.map(w => `[${w.name}] +${w.totalWon}🪙 (${w.description || '获胜'})`).join(', ')}` : '无人获胜'}
+            </div>
+            ${h.communityCards && h.communityCards.length > 0 ? `
+              <div class="text-[10px] text-slate-400 font-mono-code flex items-center gap-1 pt-1 border-t border-slate-800/80">
+                <span>公共牌:</span>
+                <span class="text-slate-300 font-bold">${h.communityCards.join(' ')}</span>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      }
+
       copyRoomLinkOnly() {
         const roomId = this.tableState ? this.tableState.id : '';
         const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
@@ -2030,9 +2150,18 @@
           }
         }
 
+        const leftDrawer = document.getElementById('drawer-left-stats');
+        if (leftDrawer && !leftDrawer.classList.contains('hidden')) {
+          this.renderLeftStatsDrawer(state);
+        }
+        const rightDrawer = document.getElementById('drawer-right-history');
+        if (rightDrawer && !rightDrawer.classList.contains('hidden')) {
+          this.renderRightHistoryDrawer(state);
+        }
+
         document.getElementById('watermark-stage-hand').innerText = `训练赛◆国际扑克 第 ${state.handCount || 1} 手`;
         document.getElementById('watermark-blind-level').innerText = `🪙 ${state.smallBlind}/${state.bigBlind} 级别:1`;
-        document.getElementById('watermark-room-name').innerText = `< ${state.name || 'poker'} >`;
+        document.getElementById('watermark-room-name').innerText = `【 ${state.name || 'poker'} 】`;
         document.getElementById('watermark-room-code').innerText = `邀请码:${state.id}`;
 
         // 房主控制大按钮
