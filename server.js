@@ -680,6 +680,19 @@ class PokerTable {
     return { success: true, rabbitCards: this.rabbitCards.map(c => c.toJSON()) };
   }
 
+  destroy() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    if (this.blindTimerInterval) {
+      clearInterval(this.blindTimerInterval);
+      this.blindTimerInterval = null;
+    }
+    this.isPaused = true;
+    this.stage = 'IDLE';
+  }
+
   togglePauseGame(hostId) {
     if (this.hostId !== hostId) return { success: false, msg: '只有房主可操作' };
     this.isPaused = !this.isPaused;
@@ -1559,6 +1572,19 @@ io.on('connection', socket => {
       table.notify();
     }
 
+    // 检查桌上真人玩家状态：如果所有真人都离线，立即自动暂停挂起对局，停止消耗CPU
+    const realPlayers = table.seats.filter(s => s && !s.isBot);
+    const onlineRealPlayers = realPlayers.filter(s => s.isOnline);
+    if (onlineRealPlayers.length === 0) {
+      table.isPaused = true;
+      if (table.timerInterval) {
+        clearInterval(table.timerInterval);
+        table.timerInterval = null;
+      }
+      table.log('⏸️ 所有玩家均已离开，牌局已自动挂起暂停');
+      table.notify();
+    }
+
     // 延迟 45 秒：如果玩家 45 秒内未重连回来，自动站起离座释放座位给他人！
     setTimeout(() => {
       const currentRoom = rooms.get(currentRoomId);
@@ -1567,6 +1593,18 @@ io.on('connection', socket => {
         if (liveP && liveP.id === currentPlayerId && liveP.isOnline === false) {
           currentRoom.table.log(`🚪 离线玩家 [${liveP.name}] 超时未归，系统自动将其请离座位释放空座`);
           currentRoom.table.standUp(currentPlayerId);
+
+          // 若整桌已经完全空无一人，且无真人在线，15 分钟后自动销毁释放房间
+          const remainingReal = currentRoom.table.seats.filter(s => s && !s.isBot);
+          if (remainingReal.length === 0) {
+            setTimeout(() => {
+              const checkRoom = rooms.get(currentRoomId);
+              if (checkRoom && checkRoom.table.seats.filter(s => s && !s.isBot).length === 0) {
+                checkRoom.table.destroy();
+                rooms.delete(currentRoomId);
+              }
+            }, 15 * 60 * 1000);
+          }
         }
       }
     }, 45000);
