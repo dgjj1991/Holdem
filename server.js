@@ -1509,8 +1509,8 @@ io.on('connection', socket => {
       hostName: options.hostName || '房主',
       name: options.name || 'poker',
       gameMode: options.gameMode || 'CASH',
-      smallBlind: options.smallBlind || 10,
-      bigBlind: options.bigBlind || 20,
+      smallBlind: options.smallBlind || 5,
+      bigBlind: options.bigBlind || 10,
       defaultBuyIn: options.defaultBuyIn || 1000,
       durationMinutes: options.durationMinutes || 0
     });

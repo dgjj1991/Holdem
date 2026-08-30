@@ -1278,8 +1278,8 @@
           <div class="space-y-1">
             <label class="text-xs font-semibold text-slate-300">大小盲注</label>
             <select id="select-blinds-cash" class="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-emerald-400 focus:outline-none focus:border-amber-400">
-              <option value="5/10">🪙 5 / 10</option>
-              <option value="10/20" selected>🪙 10 / 20 (标准)</option>
+              <option value="5/10" selected>🪙 5 / 10 (推荐默认)</option>
+              <option value="10/20">🪙 10 / 20 (标准)</option>
               <option value="20/40">🪙 20 / 40 (中级)</option>
               <option value="50/100">🪙 50 / 100 (豪客)</option>
             </select>
@@ -2172,12 +2172,12 @@
         const customRoomName = document.getElementById('input-room-name-cash') ? document.getElementById('input-room-name-cash').value.trim() || 'poker' : 'poker';
         this.saveUserSession();
 
-        let sb = 10, bb = 20;
+        let sb = 5, bb = 10;
         const blindsEl = document.getElementById('select-blinds-cash');
         if (blindsEl) {
           const parts = blindsEl.value.split('/');
-          sb = parseInt(parts[0], 10) || 10;
-          bb = parseInt(parts[1], 10) || 20;
+          sb = parseInt(parts[0], 10) || 5;
+          bb = parseInt(parts[1], 10) || 10;
         }
 
         this.ensureSocketConnection(() => {
