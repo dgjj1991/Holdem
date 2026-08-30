@@ -1,0 +1,15 @@
+{
+  "name": "texas-holdem-online",
+  "version": "1.0.0",
+  "description": "Texas Hold'em Online Multi-player Game",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
