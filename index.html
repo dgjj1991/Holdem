@@ -1164,16 +1164,20 @@
           </div>
         </div>
 
-        <div class="space-y-1">
+        <div class="space-y-1.5">
           <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
-            <span>比赛时长 / 自动结束规则</span>
-            <span class="text-[10px] text-amber-400">到期自动结算</span>
+            <span>比赛有效时长 / 自动结算规则</span>
+            <span class="text-[10px] text-amber-400 font-bold">支持全天 24 小时场</span>
           </label>
-          <div class="grid grid-cols-4 gap-1.5 text-center text-[11px] font-bold">
-            <button type="button" onclick="app.setRoomDuration(0, this)" class="btn-duration py-1.5 rounded-xl border border-amber-500 bg-amber-500 text-slate-950 shadow">无限</button>
-            <button type="button" onclick="app.setRoomDuration(30, this)" class="btn-duration py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">30分</button>
-            <button type="button" onclick="app.setRoomDuration(60, this)" class="btn-duration py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">60分</button>
-            <button type="button" onclick="app.setRoomDuration(120, this)" class="btn-duration py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">120分</button>
+          <div class="grid grid-cols-3 gap-1.5 text-center text-[11px] font-bold">
+            <button type="button" onclick="app.setRoomDuration(1440, this)" class="btn-duration py-2 rounded-xl border border-amber-500 bg-amber-500 text-slate-950 shadow flex items-center justify-center gap-1 font-black">
+              <span>⭐</span><span>24 小时 (全天场)</span>
+            </button>
+            <button type="button" onclick="app.setRoomDuration(480, this)" class="btn-duration py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">8 小时</button>
+            <button type="button" onclick="app.setRoomDuration(240, this)" class="btn-duration py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">4 小时</button>
+            <button type="button" onclick="app.setRoomDuration(120, this)" class="btn-duration py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">2 小时</button>
+            <button type="button" onclick="app.setRoomDuration(60, this)" class="btn-duration py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">1 小时</button>
+            <button type="button" onclick="app.setRoomDuration(0, this)" class="btn-duration py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">无限时长</button>
           </div>
         </div>
 
@@ -1229,6 +1233,7 @@
         this.matchBuyInLimitMap = ['无限制', '8K', '12K', '16K', '20K', '30K'];
         this.soundEnabled = true;
         this.vibrateEnabled = true;
+        this.selectedDurationMinutes = 1440; // 默认 24 小时全天场
         this.currentTheme = localStorage.getItem('table_theme') || 'blue';
         this.propTargetSeat = null;
         this.audioCtx = null;
@@ -1883,9 +1888,15 @@
         if (timerBadge) {
           if (state.remainingDurationSeconds >= 0 && !state.isGameEnded) {
             timerBadge.classList.remove('hidden');
-            const m = Math.floor(state.remainingDurationSeconds / 60);
-            const s = state.remainingDurationSeconds % 60;
-            document.getElementById('label-room-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            const totalSec = state.remainingDurationSeconds;
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            if (h > 0) {
+              document.getElementById('label-room-timer').innerText = `${h}时${m < 10 ? '0' : ''}${m}分`;
+            } else {
+              document.getElementById('label-room-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            }
           } else {
             timerBadge.classList.add('hidden');
           }
