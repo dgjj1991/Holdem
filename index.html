@@ -48,7 +48,7 @@
     }
     .acting-pulse { animation: timer-glow 1.4s infinite ease-in-out; }
 
-    /* 庄家/盲注醒目实体徽章 */
+    /* 庄家/盲注实体徽章 */
     .badge-dealer {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #000;
@@ -68,12 +68,34 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 8px rgba(168, 85, 247, 0.8);
     }
 
+    /* 全屏丝滑弹幕动画 */
+    @keyframes danmaku-slide {
+      from { transform: translateX(100vw); }
+      to { transform: translateX(-100%); }
+    }
+    .danmaku-item {
+      position: absolute;
+      white-space: nowrap;
+      animation: danmaku-slide 7s linear forwards;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 0, 0, 0.8);
+    }
+
+    /* 2-7 绝杀爆炸光效 */
+    @keyframes flex-glow {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.9)); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 40px rgba(239, 68, 68, 1)); }
+    }
+    .flex-animation { animation: flex-glow 1s infinite ease-in-out; }
+
     input[type=range] { accent-color: #f59e0b; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-slate-950 text-slate-100">
+
+  <!-- ================= 全屏弹幕飞行容器 (无遮挡点击) ================= -->
+  <div id="danmaku-container" class="fixed inset-0 pointer-events-none z-40 overflow-hidden"></div>
 
   <!-- ================= 顶部导航状态栏 ================= -->
   <header class="h-14 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 flex items-center justify-between z-30 shrink-0">
@@ -96,6 +118,12 @@
 
     <!-- 顶部操作区 -->
     <div class="flex items-center gap-2">
+      
+      <!-- 🪂 降落伞跑马开关 (Run It Twice) -->
+      <button id="btn-toggle-twice" onclick="app.toggleRunItTwice()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-xs font-bold text-indigo-300 border border-indigo-700/50 transition" title="全下 All-in 翻两次牌以降低波动">
+        <span>🪂 降落伞跑马: <b id="label-run-twice" class="text-emerald-400">翻1次</b></span>
+      </button>
+
       <!-- 邀请好友 -->
       <button id="btn-share-room" onclick="app.copyRoomLink()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 transition">
         <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
@@ -103,9 +131,9 @@
       </button>
 
       <!-- 快速添加 AI 陪练 -->
-      <button id="btn-add-bot" onclick="app.addBot()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/50 text-xs font-medium transition">
+      <button id="btn-add-bot" onclick="app.addBot()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition">
         <i data-lucide="bot" class="w-3.5 h-3.5"></i>
-        <span>+AI机器人</span>
+        <span>+AI</span>
       </button>
 
       <!-- 战绩统计 -->
@@ -133,10 +161,9 @@
     <!-- 德州牌桌本体 -->
     <div id="poker-table" class="relative w-full max-w-5xl aspect-[16/10] md:aspect-[16/9] rounded-[110px] md:rounded-[200px] poker-felt flex flex-col items-center justify-center">
       
-      <!-- 牌桌内圈装饰线与 LOGO -->
       <div class="absolute inset-3 md:inset-6 rounded-[90px] md:rounded-[180px] border border-emerald-400/20 pointer-events-none flex flex-col items-center justify-center opacity-30">
         <span class="font-poker text-xl md:text-3xl tracking-widest text-emerald-100/40 select-none">TEXAS HOLD'EM</span>
-        <span class="text-[10px] md:text-xs text-emerald-200/30 tracking-wider mt-0.5">AUTO DEAL · 2-7 BOUNTY · PARACHUTE</span>
+        <span class="text-[10px] md:text-xs text-emerald-200/30 tracking-wider mt-0.5">AUTO DEAL · 2-7 FLEX · RUN IT TWICE</span>
       </div>
 
       <!-- 中央公共牌区与底池展示 -->
@@ -151,7 +178,7 @@
           </div>
         </div>
 
-        <!-- 5 张公共牌 (Flop, Turn, River) -->
+        <!-- 5 张公共牌 (第一板) -->
         <div id="community-cards" class="flex items-center gap-1.5 md:gap-2.5 min-h-[64px] md:min-h-[92px]">
           <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">1</div>
           <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">2</div>
@@ -160,15 +187,21 @@
           <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">5</div>
         </div>
 
-        <!-- 牌局全自动提示信息 -->
+        <!-- 降落伞跑马第 2 板公共牌 (触发 Run It Twice 时展示) -->
+        <div id="board2-container" class="hidden flex items-center gap-1.5 min-h-[50px] bg-black/40 px-3 py-1 rounded-xl border border-indigo-500/40 backdrop-blur">
+          <span class="text-[10px] text-indigo-300 font-bold mr-1">🪂第2跑:</span>
+          <div id="board2-cards" class="flex items-center gap-1"></div>
+        </div>
+
+        <!-- 牌局提示信息 -->
         <div id="table-status-message" class="text-xs md:text-sm font-semibold text-emerald-200 bg-black/60 px-4 py-0.5 rounded-full border border-emerald-500/30 backdrop-blur shadow">
           满 2 人就座即全自动发牌...
         </div>
 
-        <!-- 2-7 绝杀秀牌收取赏金按钮 (当局拿 2-7 获胜时触发) -->
-        <div id="bounty-27-trigger" class="hidden animate-bounce">
-          <button onclick="app.claim27Bounty()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 text-slate-950 font-black text-xs md:text-sm shadow-xl shadow-amber-500/50 border-2 border-white flex items-center gap-2">
-            <span>🔥 秀出 2-7 绝杀！向全桌收缴 3BB 赏金！</span>
+        <!-- 🔥 2-7 绝杀炸场炫耀特效按钮 (纯视觉排场，不扣钱) -->
+        <div id="bounty-27-trigger" class="hidden animate-bounce z-30">
+          <button onclick="app.trigger27ShowEffect()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 text-slate-950 font-black text-xs md:text-sm shadow-2xl border-2 border-white flex items-center gap-2 cursor-pointer hover:scale-105 transition">
+            <span>🔥 秀出 2/7 绝杀！全屏炸场炫耀！🔥</span>
           </button>
         </div>
 
@@ -179,35 +212,23 @@
 
     </div>
 
-    <!-- 左下角：实时对局简讯 -->
-    <div class="absolute left-3 bottom-3 w-56 md:w-72 max-h-28 hidden sm:flex flex-col justify-end pointer-events-none z-20">
-      <div id="game-logs" class="space-y-1 text-[11px] font-mono-code text-slate-400 overflow-y-auto no-scrollbar">
-        <div class="text-emerald-400">系统: 满2人自动发牌 · 支持2/7秀牌与降落伞救援！</div>
-      </div>
-    </div>
-
   </main>
 
-  <!-- ================= 底部操作控制面板 ================= -->
-  <footer class="h-20 bg-slate-900/95 border-t border-slate-800 px-3 md:px-8 flex items-center justify-between z-30 shrink-0">
+  <!-- ================= 底部操作控制面板 & 实时弹幕输入 ================= -->
+  <footer class="h-20 bg-slate-900/95 border-t border-slate-800 px-3 md:px-6 flex items-center justify-between z-30 shrink-0 gap-3">
     
-    <!-- 玩家自身信息与个人座位操作 (保位暂离/站起离开/降落伞) -->
-    <div class="flex items-center gap-2.5 min-w-[200px]">
+    <!-- 玩家信息与个人选项 (暂离/站起) -->
+    <div class="flex items-center gap-2 min-w-[150px] shrink-0">
       <div class="relative">
         <img id="my-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Me" class="w-9 h-9 rounded-full border-2 border-amber-400 bg-slate-800">
         <span id="my-role-badge" class="hidden absolute -bottom-1 -right-1 px-1.5 py-0.2 text-[9px] font-black rounded-full badge-dealer shadow">D</span>
       </div>
       <div>
-        <div class="flex items-center gap-1.5">
-          <span id="my-name" class="text-xs font-bold truncate max-w-[80px]">我的昵称</span>
-          <!-- 个人座位状态选项 -->
+        <div class="flex items-center gap-1">
+          <span id="my-name" class="text-xs font-bold truncate max-w-[70px]">我的昵称</span>
           <div id="seat-options-menu" class="hidden flex items-center gap-1">
-            <button id="btn-sit-out" onclick="app.toggleSitOut()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300" title="暂离保位，不发牌">
-              暂离
-            </button>
-            <button onclick="app.standUp()" class="px-1.5 py-0.5 rounded bg-rose-950 hover:bg-rose-900 border border-rose-800/50 text-[10px] text-rose-300" title="站起离开座位">
-              站起
-            </button>
+            <button id="btn-sit-out" onclick="app.toggleSitOut()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300">暂离</button>
+            <button onclick="app.standUp()" class="px-1.5 py-0.5 rounded bg-rose-950 hover:bg-rose-900 border border-rose-800/50 text-[10px] text-rose-300">站起</button>
           </div>
         </div>
         <div class="flex items-center gap-1 text-xs text-amber-400 font-mono-code font-extrabold">
@@ -215,17 +236,26 @@
           <span id="my-chips">1000</span>
         </div>
       </div>
-
-      <!-- 🪂 降落伞破产救援按钮 -->
-      <button id="btn-parachute" onclick="app.triggerParachute()" class="hidden px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs shadow-lg animate-bounce flex items-center gap-1">
-        <span>🪂 降落伞救援 (+1000)</span>
+      <button id="btn-rebuy" onclick="app.rebuy()" class="hidden px-2 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow animate-bounce">
+        +1000补币
       </button>
     </div>
 
+    <!-- 💬 实时弹幕聊天输入区 -->
+    <div class="hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-700 max-w-sm">
+      <input type="text" id="input-danmaku" placeholder="发弹幕聊天... (按回车发送)" maxlength="30" onkeydown="if(event.key==='Enter') app.sendDanmaku()" class="w-36 md:w-48 bg-transparent text-xs text-white focus:outline-none placeholder:text-slate-500">
+      <button onclick="app.sendDanmaku()" class="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">发送</button>
+      <div class="flex items-center gap-1 text-[10px] text-slate-400 pl-1 border-l border-slate-700">
+        <button onclick="app.sendQuickDanmaku('🔥 All in 不要怂！')" class="hover:text-amber-300">All in!</button>
+        <button onclick="app.sendQuickDanmaku('😎 抓到了吧！')" class="hover:text-amber-300">抓到!</button>
+        <button onclick="app.sendQuickDanmaku('🤝 GG好牌！')" class="hover:text-amber-300">GG</button>
+      </div>
+    </div>
+
     <!-- 核心行动操作区 (Fold, Check/Call, Raise, All-in) -->
-    <div id="action-controls" class="flex-1 flex flex-col md:flex-row items-center justify-end md:justify-center gap-2 max-w-2xl">
+    <div id="action-controls" class="flex-1 flex flex-col md:flex-row items-center justify-end gap-2 max-w-xl">
       
-      <!-- 快捷加注倍数条 -->
+      <!-- 快捷加注条 -->
       <div id="quick-bet-bar" class="hidden flex items-center gap-1.5 w-full md:w-auto justify-center">
         <button onclick="app.setBetPreset('min')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">最小</button>
         <button onclick="app.setBetPreset('2.5bb')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">2.5BB</button>
@@ -236,40 +266,27 @@
       </div>
 
       <!-- 行动主按钮组 -->
-      <div class="flex items-center gap-2 w-full md:w-auto justify-end">
-        
-        <!-- 弃牌 (Fold) -->
-        <button id="btn-fold" onclick="app.performAction('fold')" disabled class="flex-1 md:flex-none px-4 md:px-5 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
+      <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
+        <button id="btn-fold" onclick="app.performAction('fold')" disabled class="px-3 md:px-5 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
           弃牌 (Fold)
         </button>
 
-        <!-- 过牌 / 跟注 (Check / Call) -->
-        <button id="btn-check-call" onclick="app.performAction('call')" disabled class="flex-1 md:flex-none px-4 md:px-6 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1">
+        <button id="btn-check-call" onclick="app.performAction('call')" disabled class="px-3 md:px-6 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1">
           <span id="check-call-label">过牌 (Check)</span>
         </button>
 
-        <!-- 加注滑块与加注按钮 (Raise / Bet) -->
-        <div id="raise-box" class="flex items-center gap-1.5">
-          <div class="hidden sm:flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-xl border border-slate-700">
-            <input type="range" id="bet-slider" min="20" max="1000" step="10" value="20" oninput="app.onSliderChange(this.value)" class="w-16 md:w-24 cursor-pointer">
-            <span id="bet-slider-val" class="text-xs font-mono-code font-bold text-amber-400 w-9 text-right">40</span>
+        <div id="raise-box" class="flex items-center gap-1">
+          <div class="hidden sm:flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-xl border border-slate-700">
+            <input type="range" id="bet-slider" min="20" max="1000" step="10" value="20" oninput="app.onSliderChange(this.value)" class="w-14 md:w-20 cursor-pointer">
+            <span id="bet-slider-val" class="text-xs font-mono-code font-bold text-amber-400 w-8 text-right">40</span>
           </div>
 
           <button id="btn-raise" onclick="app.performAction('raise')" disabled class="px-3 md:px-5 py-2 rounded-xl bg-amber-600/30 hover:bg-amber-500 border border-amber-500/50 text-amber-300 hover:text-slate-950 font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
             <span id="raise-label">加注</span>
           </button>
         </div>
-
       </div>
 
-    </div>
-
-    <!-- 右下角自动发牌状态指示 -->
-    <div class="hidden sm:flex items-center gap-2">
-      <div class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300 flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>自动开局中</span>
-      </div>
     </div>
 
   </footer>
@@ -283,7 +300,7 @@
           ♠
         </div>
         <h2 class="text-xl font-extrabold tracking-wide text-white">德州聚会 · 房间大厅</h2>
-        <p class="text-xs text-slate-400">满2人自动发牌 · 2/7秀牌赏金 · 降落伞救援</p>
+        <p class="text-xs text-slate-400">自动发牌 · 降落伞跑马 · 2/7炸场特效 · 实时弹幕</p>
       </div>
 
       <!-- 玩家昵称输入 -->
@@ -311,7 +328,7 @@
               <input type="radio" name="game-mode-radio" value="CASH" checked class="accent-amber-400">
               <div class="text-left">
                 <div class="text-xs font-bold text-slate-200">常规桌 (Cash)</div>
-                <div class="text-[10px] text-slate-400">1000币降落伞无限救援</div>
+                <div class="text-[10px] text-slate-400">1000币自由补买</div>
               </div>
             </label>
             <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 border border-slate-700 cursor-pointer hover:border-slate-500">
@@ -342,15 +359,12 @@
       <!-- PVE 模式专属面板 -->
       <div id="pve-panel" class="hidden space-y-3">
         <p class="text-xs text-slate-400 bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 leading-relaxed">
-          💡 **单人练习房**：系统为您安排 9 名具备紧凶、松凶、稳健不同风格的 AI 陪练，筹码与战绩自动保存！
+          💡 **单人练习房**：系统自动为您安排 9 名智能 AI 陪练！
         </p>
-        
-        <div class="space-y-2">
-          <button id="btn-enter-pve" onclick="app.startOfflinePve(false)" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
-            <i data-lucide="play-circle" class="w-4 h-4"></i>
-            <span id="btn-enter-pve-text">进入单人练习房间</span>
-          </button>
-        </div>
+        <button id="btn-enter-pve" onclick="app.startOfflinePve()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+          <i data-lucide="play-circle" class="w-4 h-4"></i>
+          <span>进入单人练习房间</span>
+        </button>
       </div>
 
     </div>
@@ -411,6 +425,7 @@
         this.socket = null;
         this.tableState = null;
         this.currentBetSliderValue = 40;
+        this.isRunItTwice = false;
         this.loadUserSession();
       }
 
@@ -476,18 +491,14 @@
 
       toggleStatsModal(show) {
         const modal = document.getElementById('modal-stats');
-        if (show) {
-          modal.classList.remove('hidden');
-          this.fetchAndRenderStats();
-        } else modal.classList.add('hidden');
+        if (show) { modal.classList.remove('hidden'); this.fetchAndRenderStats(); }
+        else modal.classList.add('hidden');
       }
 
       toggleHistoryModal(show) {
         const modal = document.getElementById('modal-history');
-        if (show) {
-          modal.classList.remove('hidden');
-          this.fetchAndRenderHistory();
-        } else modal.classList.add('hidden');
+        if (show) { modal.classList.remove('hidden'); this.fetchAndRenderHistory(); }
+        else modal.classList.add('hidden');
       }
 
       copyRoomLink() {
@@ -501,6 +512,76 @@
         });
       }
 
+      // ================= 实时弹幕引擎 =================
+      sendDanmaku() {
+        const input = document.getElementById('input-danmaku');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        if (this.socket) {
+          this.socket.emit('send_danmaku', { text, senderName: this.playerName });
+        }
+      }
+
+      sendQuickDanmaku(text) {
+        if (this.socket) {
+          this.socket.emit('send_danmaku', { text, senderName: this.playerName });
+        }
+      }
+
+      spawnDanmakuElement(data) {
+        const container = document.getElementById('danmaku-container');
+        const el = document.createElement('div');
+        el.className = 'danmaku-item text-xs md:text-sm font-bold flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 border border-slate-700/60 backdrop-blur shadow-lg';
+        
+        // 随机高度轨道 (10% ~ 75%)
+        const topPercent = 12 + Math.random() * 60;
+        el.style.top = `${topPercent}%`;
+        el.style.color = data.color || '#f59e0b';
+        el.innerHTML = `
+          <span class="text-[10px] text-slate-400 font-normal">[${data.sender}]</span>
+          <span>${data.text}</span>
+        `;
+
+        container.appendChild(el);
+        // 7.5秒后自动移除
+        setTimeout(() => el.remove(), 7500);
+      }
+
+      // ================= 🪂 降落伞跑马 (Run It Twice) =================
+      toggleRunItTwice() {
+        this.isRunItTwice = !this.isRunItTwice;
+        document.getElementById('label-run-twice').innerText = this.isRunItTwice ? '翻2次 (降落伞模式)' : '翻1次';
+        document.getElementById('label-run-twice').className = this.isRunItTwice ? 'text-amber-400 font-extrabold' : 'text-emerald-400';
+        if (this.socket) {
+          this.socket.emit('toggle_run_it_twice', { enabled: this.isRunItTwice });
+        }
+      }
+
+      // ================= 🔥 2-7 绝杀炸场特效 (纯视觉庆祝，不扣钱) =================
+      trigger27ShowEffect() {
+        if (this.socket) {
+          this.socket.emit('trigger_27_effect', (res) => {
+            if (res && res.success) {
+              document.getElementById('bounty-27-trigger').classList.add('hidden');
+            }
+          });
+        }
+      }
+
+      show27FlexBroadcast(winnerName) {
+        if (window.confetti) {
+          window.confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
+        }
+        // 发射多条霸气金色弹幕
+        this.spawnDanmakuElement({
+          text: `🔥【2-7 绝杀】玩家 [${winnerName}] 凭 2-7 绝世炸穿全场！天选之子！`,
+          sender: '牌桌系统',
+          color: '#fbbf24'
+        });
+      }
+
+      // ================= PVP 实时网络逻辑 =================
       ensureSocketConnection(callback) {
         if (this.socket && this.socket.connected) {
           if (callback) callback();
@@ -513,10 +594,7 @@
         }
 
         this.addLogMessage(`连接服务器: ${backendUrl}...`);
-        this.socket = io(backendUrl, {
-          transports: ['websocket', 'polling'],
-          reconnection: true
-        });
+        this.socket = io(backendUrl, { transports: ['websocket', 'polling'], reconnection: true });
 
         this.socket.on('connect', () => {
           this.addLogMessage('✅ 联机服务已连接！');
@@ -529,6 +607,16 @@
 
         this.socket.on('game_log', (data) => {
           this.addLogMessage(data.message);
+        });
+
+        // 监听新弹幕
+        this.socket.on('new_danmaku', (danmaku) => {
+          this.spawnDanmakuElement(danmaku);
+        });
+
+        // 监听 2-7 绝杀特效广播
+        this.socket.on('broadcast_27_effect', ({ winnerName }) => {
+          this.show27FlexBroadcast(winnerName);
         });
       }
 
@@ -549,12 +637,7 @@
               document.getElementById('room-id-display').innerText = `房间: ${res.roomId}`;
               this.socket.emit('sit_down', {
                 seatIndex: 0,
-                player: {
-                  id: this.playerId,
-                  name: this.playerName,
-                  chips: 1000,
-                  avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}`
-                }
+                player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
               }, () => {});
               this.addLogMessage(`🎉 房间已创建！就座 >=2 人将全自动开始发牌。`);
             }
@@ -580,12 +663,7 @@
               if (emptyIdx !== -1) {
                 this.socket.emit('sit_down', {
                   seatIndex: emptyIdx,
-                  player: {
-                    id: this.playerId,
-                    name: this.playerName,
-                    chips: 1000,
-                    avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}`
-                  }
+                  player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
                 }, () => {});
               }
             } else {
@@ -595,50 +673,28 @@
         });
       }
 
-      // 个人座位操作：站起离开
       standUp() {
         if (this.socket) {
-          this.socket.emit('stand_up', (res) => {
-            this.addLogMessage('您已站起离开座位');
-          });
+          this.socket.emit('stand_up', () => this.addLogMessage('您已站起离开座位'));
         }
       }
 
-      // 个人座位操作：保位暂离 / 回到座位
       toggleSitOut() {
         if (!this.tableState) return;
         const mySeat = this.tableState.seats.find(s => s && s.id === this.playerId);
         if (!mySeat) return;
-
         const nextState = !mySeat.sittingOut;
         if (this.socket) {
-          this.socket.emit('toggle_sit_out', { sittingOut: nextState }, (res) => {
+          this.socket.emit('toggle_sit_out', { sittingOut: nextState }, () => {
             document.getElementById('btn-sit-out').innerText = nextState ? '回座' : '暂离';
           });
         }
       }
 
-      // 🪂 降落伞破产救援
-      triggerParachute() {
+      rebuy() {
         if (this.socket) {
-          this.socket.emit('trigger_parachute', (res) => {
-            if (res && res.success) {
-              if (window.confetti) window.confetti({ particleCount: 100, spread: 80 });
-              this.addLogMessage('🪂 降落伞救援成功！空投 +1000 筹码！');
-            }
-          });
-        }
-      }
-
-      // 🔥 2-7 绝杀秀牌收取全桌赏金
-      claim27Bounty() {
-        if (this.socket) {
-          this.socket.emit('claim_27_bounty', (res) => {
-            if (res && res.success) {
-              if (window.confetti) window.confetti({ particleCount: 120, spread: 90 });
-              document.getElementById('bounty-27-trigger').classList.add('hidden');
-              this.addLogMessage(`🔥 2-7 绝杀秀牌成功！向全桌收缴 +${res.totalBounty} 赏金！`);
-            }
+          this.socket.emit('rebuy', (res) => {
+            if (res && !res.success) alert(res.msg);
           });
         }
       }
@@ -687,7 +743,7 @@
         document.getElementById('table-pot').innerText = state.pot;
         document.getElementById('room-blind-display').innerText = `盲注: ${state.smallBlind}/${state.bigBlind}`;
 
-        // 公共牌
+        // 1. 公共牌 (Board 1)
         const cc = document.getElementById('community-cards');
         let cHtml = '';
         for (let i = 0; i < 5; i++) {
@@ -707,7 +763,25 @@
         }
         cc.innerHTML = cHtml;
 
-        // 10人座位
+        // 2. 🪂 降落伞跑马第 2 板公共牌 (Board 2)
+        const b2Container = document.getElementById('board2-container');
+        const b2CardsEl = document.getElementById('board2-cards');
+        if (state.board2Cards && state.board2Cards.length > 0) {
+          b2Container.classList.remove('hidden');
+          b2CardsEl.innerHTML = state.board2Cards.map(c => {
+            const col = c.suit === 'h' ? 'text-red-600' : c.suit === 'd' ? 'text-blue-600' : c.suit === 'c' ? 'text-emerald-700' : 'text-slate-900';
+            return `
+              <div class="w-7 h-10 bg-white rounded border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${col} text-[9px]">
+                <div>${c.label}</div>
+                <div class="text-center">${c.symbol}</div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          b2Container.classList.add('hidden');
+        }
+
+        // 3. 10人座位
         const sc = document.getElementById('seats-container');
         let sHtml = '';
         for (let i = 0; i < 10; i++) {
@@ -726,7 +800,6 @@
             sHtml += `
               <div class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-auto transition-all" style="top: ${topPercent}%; left: ${leftPercent}%;">
                 
-                <!-- 顶部角色实体徽章 (D, SB, BB, 暂离) -->
                 <div class="flex items-center gap-1 mb-0.5 z-20">
                   ${isSittingOut ? '<span class="px-1.5 py-0.2 rounded-full bg-slate-700 text-slate-300 text-[9px] font-bold">保位暂离</span>' : ''}
                   ${isD ? '<span class="px-1.5 py-0.2 rounded-full badge-dealer text-[10px] font-black tracking-wider">D 庄家</span>' : ''}
@@ -771,15 +844,12 @@
         }
         sc.innerHTML = sHtml;
 
-        // 2-7 赏金按钮触发
+        // 2-7 特效按钮触发
         const bountyTrigger = document.getElementById('bounty-27-trigger');
-        if (state.bounty27Eligible) {
-          bountyTrigger.classList.remove('hidden');
-        } else {
-          bountyTrigger.classList.add('hidden');
-        }
+        if (state.bounty27Eligible) bountyTrigger.classList.remove('hidden');
+        else bountyTrigger.classList.add('hidden');
 
-        // 状态信息
+        // 提示信息
         if (state.stage === 'END_HAND' && state.handWinners && state.handWinners.length > 0) {
           const names = state.handWinners.map(w => `${w.name} (+${w.totalWon})`).join(', ');
           document.getElementById('table-status-message').innerText = `🏆 赢家: ${names}`;
@@ -806,7 +876,7 @@
         const mySeat = state.seats.find(s => s && s.id === this.playerId);
         const myRoleBadge = document.getElementById('my-role-badge');
         const seatMenu = document.getElementById('seat-options-menu');
-        const btnParachute = document.getElementById('btn-parachute');
+        const btnRebuy = document.getElementById('btn-rebuy');
 
         if (mySeat) {
           document.getElementById('my-name').innerText = mySeat.name;
@@ -818,11 +888,11 @@
           if (state.dealerSeat === mySeat.seatIndex) myRoleBadge.classList.remove('hidden');
           else myRoleBadge.classList.add('hidden');
 
-          if (mySeat.chips === 0) btnParachute.classList.remove('hidden');
-          else btnParachute.classList.add('hidden');
+          if (mySeat.chips === 0) btnRebuy.classList.remove('hidden');
+          else btnRebuy.classList.add('hidden');
         } else {
           seatMenu.classList.add('hidden');
-          btnParachute.classList.add('hidden');
+          btnRebuy.classList.add('hidden');
         }
 
         const isMyTurn = state.currentActorSeat !== -1 && state.seats[state.currentActorSeat] && state.seats[state.currentActorSeat].id === this.playerId;
@@ -854,11 +924,8 @@
       }
 
       addLogMessage(msg) {
-        const logBox = document.getElementById('game-logs');
         const item = document.createElement('div');
         item.innerText = msg;
-        logBox.appendChild(item);
-        logBox.scrollTop = logBox.scrollHeight;
       }
 
       fetchAndRenderStats() {

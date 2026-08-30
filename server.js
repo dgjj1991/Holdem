@@ -19,12 +19,10 @@ const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
-// 健康检查
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// 智能寻找 index.html 路径
 function findIndexPath() {
   const possiblePaths = [
     path.join(__dirname, 'index.html'),
@@ -46,11 +44,8 @@ app.use(express.static(process.cwd()));
 app.get('*', (req, res) => {
   if (req.path.startsWith('/socket.io') || req.path.startsWith('/health')) return;
   const p = findIndexPath();
-  if (p) {
-    res.sendFile(p);
-  } else {
-    res.status(200).send('Texas Holdem Server is running.');
-  }
+  if (p) res.sendFile(p);
+  else res.status(200).send('Texas Holdem Server is running.');
 });
 
 // ================= 扑克引擎与密码学洗牌 =================
@@ -203,7 +198,7 @@ function evaluateHand(cards) {
   return best;
 }
 
-// ================= 多边池管理 =================
+// ================= 边池分配 =================
 class PotManager {
   static calculatePots(contributors) {
     const active = contributors.filter(p => p.totalBet > 0).map(p => ({ ...p }));
@@ -228,7 +223,7 @@ class PotManager {
     return pots;
   }
 
-  static distributePots(players) {
+  static distributePots(players, totalPotAmount) {
     const pots = this.calculatePots(players);
     const payouts = [];
     const pMap = new Map();
@@ -305,7 +300,6 @@ class PokerBot {
       return { action: 'fold', amount: 0 };
     }
 
-    // 翻牌后
     const allCards = [...bot.holeCards, ...table.communityCards];
     const evalRes = evaluateHand(allCards);
     const rank = evalRes.type.rank;
@@ -324,7 +318,7 @@ class PokerBot {
   }
 }
 
-// ================= 牌桌状态机 (支持全自动发牌、保位暂离、2-7秀牌、降落伞) =================
+// ================= 牌桌状态机 (支持 Run It Twice 降落伞跑马与 2-7 绝杀特效) =================
 class PokerTable {
   constructor({ id, name = '德州聚会桌', maxSeats = 10, gameMode = 'CASH', smallBlind = 10, bigBlind = 20, defaultBuyIn = 1000 }) {
     this.id = id;
@@ -337,6 +331,14 @@ class PokerTable {
     this.seats = new Array(maxSeats).fill(null);
     this.deck = new Deck();
     this.communityCards = [];
+    
+    // 降落伞 Run It Twice 跑马数据
+    this.runItTwice = false; // 是否开启双跑马
+    this.board1Cards = []; // 跑马第1板牌
+    this.board2Cards = []; // 跑马第2板牌
+    this.board1Winners = [];
+    this.board2Winners = [];
+
     this.stage = 'IDLE';
     this.dealerSeat = -1;
     this.smallBlindSeat = -1;
@@ -355,17 +357,14 @@ class PokerTable {
     this.onStateChange = null;
     this.onLog = null;
 
-    // 特色规则记录
-    this.bounty27Winners = []; // 本局持 2-7 获胜可秀牌收赏金的玩家
+    this.bounty27Winners = []; // 2-7 获胜可秀牌特效的玩家
   }
 
   log(msg) { if (this.onLog) this.onLog(msg); }
   notify() { if (this.onStateChange) this.onStateChange(this); }
 
-  // 坐下
   sitDown(idx, player) {
     if (idx < 0 || idx >= this.maxSeats || this.seats[idx] !== null) return { success: false, msg: '座位已占用' };
-    
     const existing = this.seats.find(s => s && s.id === player.id);
     if (existing) return { success: false, msg: '您已在牌桌中' };
 
@@ -380,11 +379,11 @@ class PokerTable {
       totalBet: 0,
       folded: false,
       allIn: false,
-      sittingOut: false, // 是否暂离保位
+      sittingOut: false,
       hasActed: false,
       lastAction: null,
       showCards: false,
-      is27Hand: false // 起手是否是 2-7
+      is27Hand: false
     };
 
     this.seats[idx] = seatPlayer;
@@ -393,13 +392,10 @@ class PokerTable {
     }
     this.log(`玩家 [${player.name}] 坐在了 ${idx + 1} 号位`);
     this.notify();
-
-    // 检查是否满足 >=2 人并自动触发发牌
     this.checkAutoStart();
     return { success: true, player: seatPlayer };
   }
 
-  // 站起离开 (Stand Up)
   standUp(playerId) {
     const idx = this.seats.findIndex(s => s && s.id === playerId);
     if (idx === -1) return false;
@@ -413,65 +409,53 @@ class PokerTable {
     return true;
   }
 
-  // 保位暂离 / 返回对局切换 (Sit Out / Come Back)
   toggleSitOut(playerId, sitOutState) {
     const p = this.seats.find(s => s && s.id === playerId);
     if (!p) return { success: false, msg: '未在座位中' };
 
     p.sittingOut = sitOutState !== undefined ? sitOutState : !p.sittingOut;
     if (p.sittingOut) {
-      this.log(`玩家 [${p.name}] 保位暂离中 (不参与发牌)`);
+      this.log(`玩家 [${p.name}] 保位暂离中`);
       if (this.stage !== 'IDLE' && this.stage !== 'END_HAND' && !p.folded) {
         this.playerAction(playerId, 'fold');
       }
     } else {
-      this.log(`玩家 [${p.name}] 回到了座位，下一局参与对局`);
+      this.log(`玩家 [${p.name}] 回到了座位`);
       this.checkAutoStart();
     }
     this.notify();
     return { success: true, sittingOut: p.sittingOut };
   }
 
-  // 降落伞紧急救援 / 重买 (Parachute Relief)
-  triggerParachute(playerId, amt = 1000) {
+  // 降落伞跑马切换 (Run It Twice 开启/关闭)
+  toggleRunItTwice(enabled) {
+    this.runItTwice = Boolean(enabled);
+    this.log(`🪂 降落伞双跑马 (Run It Twice) 已${this.runItTwice ? '开启 (All-in 发两次牌)' : '关闭 (发一次牌)'}`);
+    this.notify();
+  }
+
+  // 2-7 炫酷绝杀特效触发 (不扣钱，纯排场与全屏弹幕)
+  trigger27ShowEffect(playerId) {
+    const winner = this.seats.find(s => s && s.id === playerId);
+    if (!winner || !this.bounty27Winners.includes(playerId)) {
+      return { success: false, msg: '本局不满足 2-7 秀牌资格' };
+    }
+    this.bounty27Winners = this.bounty27Winners.filter(id => id !== playerId);
+    return { success: true, winnerName: winner.name };
+  }
+
+  rebuy(playerId, amt = 1000) {
     const p = this.seats.find(s => s && s.id === playerId);
     if (p && p.chips === 0) {
       p.chips += amt;
-      this.log(`🪂 玩家 [${p.name}] 触发了降落伞救援，空投补满 ${amt} 筹码！`);
+      this.log(`玩家 [${p.name}] 补充了 ${amt} 筹码`);
       this.notify();
       this.checkAutoStart();
       return { success: true };
     }
-    return { success: false, msg: '筹码未归零无需降落伞救援' };
+    return { success: false, msg: '筹码未耗尽' };
   }
 
-  // 触发 2/7 秀牌收取全桌赏金 (2-7 Bounty Game)
-  claim27Bounty(playerId) {
-    const winner = this.seats.find(s => s && s.id === playerId);
-    if (!winner || !this.bounty27Winners.includes(playerId)) {
-      return { success: false, msg: '本局不满足 2-7 秀牌领赏条件' };
-    }
-
-    const bountyPerPlayer = this.bigBlind * 3; // 每人额外赔付 3BB
-    let totalBountyCollected = 0;
-
-    this.seats.forEach(s => {
-      if (s && s.id !== playerId && s.chips > 0) {
-        const take = Math.min(bountyPerPlayer, s.chips);
-        s.chips -= take;
-        totalBountyCollected += take;
-        s.lastAction = `赔付2-7赏金 -${take}`;
-      }
-    });
-
-    winner.chips += totalBountyCollected;
-    this.bounty27Winners = this.bounty27Winners.filter(id => id !== playerId);
-    this.log(`🔥 玩家 [${winner.name}] 凭借 2-7 获胜并公开秀牌！向全桌收缴 2-7 赏金共 +${totalBountyCollected} 筹码！`);
-    this.notify();
-    return { success: true, totalBounty: totalBountyCollected };
-  }
-
-  // 获取有效可以发牌的在座玩家（筹码>0 且未保位暂离）
   getActiveSeats() {
     return this.seats.map((p, i) => ({ p, i })).filter(item => item.p !== null && item.p.chips > 0 && !item.p.sittingOut);
   }
@@ -479,13 +463,12 @@ class PokerTable {
     return this.seats.map((p, i) => ({ p, i })).filter(item => item.p !== null && !item.p.folded && item.p.holeCards.length > 0);
   }
 
-  // 自动发牌检查：就座人数 >= 2 人且处于空闲时，全自动开启
   checkAutoStart() {
     if (this.stage !== 'IDLE') return;
     const active = this.getActiveSeats();
     if (active.length >= 2) {
       if (this.autoDealTimer) clearTimeout(this.autoDealTimer);
-      this.log('牌桌人数已满足，2 秒后全自动开始发牌...');
+      this.log('牌桌满足开局条件，2 秒后自动发牌...');
       this.autoDealTimer = setTimeout(() => {
         if (this.stage === 'IDLE' && this.getActiveSeats().length >= 2) {
           this.startNewHand();
@@ -501,7 +484,7 @@ class PokerTable {
     const active = this.getActiveSeats();
     if (active.length < 2) {
       this.stage = 'IDLE';
-      this.log('等待至少 2 名玩家就绪后全自动发牌...');
+      this.log('等待至少 2 名就座玩家...');
       this.notify();
       return false;
     }
@@ -509,6 +492,10 @@ class PokerTable {
     this.handCount++;
     this.stage = 'PREFLOP';
     this.communityCards = [];
+    this.board1Cards = [];
+    this.board2Cards = [];
+    this.board1Winners = [];
+    this.board2Winners = [];
     this.handWinners = [];
     this.bounty27Winners = [];
     this.pot = 0;
@@ -533,20 +520,17 @@ class PokerTable {
     this.rotateDealer();
     this.postBlinds();
 
-    // 发底牌 2 张
     for (let r = 0; r < 2; r++) {
       for (const item of this.getActiveSeats()) {
         if (!item.p.folded) item.p.holeCards.push(this.deck.deal(1)[0]);
       }
     }
 
-    // 检查 2-7 起手牌
+    // 检查 2-7 起手
     this.seats.forEach(p => {
       if (p && p.holeCards.length === 2) {
         const ranks = [p.holeCards[0].rank, p.holeCards[1].rank].sort((a, b) => a - b);
-        if (ranks[0] === 2 && ranks[1] === 7) {
-          p.is27Hand = true; // 拿到 2-7 绝杀挑战底牌！
-        }
+        if (ranks[0] === 2 && ranks[1] === 7) p.is27Hand = true;
       }
     });
 
@@ -762,14 +746,13 @@ class PokerTable {
     winner.chips += this.pot;
     this.handWinners = [{ playerId: winner.id, name: winner.name, totalWon: this.pot, description: '对手全部弃牌' }];
     
-    // 检查 2-7 获胜
     if (winner.is27Hand) {
       this.bounty27Winners.push(winner.id);
-      this.log(`🎉 玩家 [${winner.name}] 手持 2-7 诈唬全场独揽底池！触发 2-7 秀牌赏金资格！`);
+      this.log(`🔥 玩家 [${winner.name}] 手持 2-7 炸穿全场！可触发 2/7 绝杀炸场特效！`);
     }
 
     this.recordHandResult();
-    this.log(`🏆 玩家 [${winner.name}] 独揽底池 ${this.pot} 筹码`);
+    this.log(`🏆 玩家 [${winner.name}] 赢得底池 ${this.pot} 筹码`);
     this.finishHand();
   }
 
@@ -777,27 +760,71 @@ class PokerTable {
     this.stage = 'SHOWDOWN';
     const inHand = this.getInHandSeats();
 
-    const evaluated = inHand.map(it => {
-      const all = [...it.p.holeCards, ...this.communityCards];
-      const b = evaluateHand(all);
-      it.p.bestHand = b;
-      it.p.showCards = true;
-      return { id: it.p.id, name: it.p.name, totalBet: it.p.totalBet, folded: it.p.folded, bestHand: b, is27Hand: it.p.is27Hand };
-    });
+    // 检查是否开启降落伞双跑马 (Run It Twice)
+    if (this.runItTwice && this.communityCards.length === 5) {
+      // 跑马模式：分两次结算
+      const halfPot = Math.floor(this.pot / 2);
+      const remainingPot = this.pot - halfPot;
 
-    const payouts = PotManager.distributePots(evaluated);
-    this.handWinners = payouts.map(w => {
-      const p = this.seats.find(s => s && s.id === w.playerId);
-      if (p) p.chips += w.totalWon;
-      const info = evaluated.find(e => e.id === w.playerId);
+      // Board 1
+      const eval1 = inHand.map(it => {
+        const b = evaluateHand([...it.p.holeCards, ...this.communityCards]);
+        return { id: it.p.id, name: it.p.name, totalBet: it.p.totalBet, folded: it.p.folded, bestHand: b };
+      });
+      const payouts1 = PotManager.distributePots(eval1, halfPot);
 
-      if (info && info.is27Hand) {
-        this.bounty27Winners.push(w.playerId);
-        this.log(`🎉 玩家 [${info.name}] 凭 2-7 胜出！触发 2-7 秀牌资格！`);
-      }
+      // Board 2: 重新发一套剩余牌
+      const deck2 = new Deck();
+      deck2.reset();
+      deck2.shuffle();
+      const board2 = deck2.deal(5);
+      this.board2Cards = board2;
 
-      return { playerId: w.playerId, name: info ? info.name : '未知', totalWon: w.totalWon, description: info ? info.bestHand.description : '' };
-    });
+      const eval2 = inHand.map(it => {
+        const b = evaluateHand([...it.p.holeCards, ...board2]);
+        return { id: it.p.id, name: it.p.name, totalBet: it.p.totalBet, folded: it.p.folded, bestHand: b };
+      });
+      const payouts2 = PotManager.distributePots(eval2, remainingPot);
+
+      payouts1.forEach(p => {
+        const s = this.seats.find(seat => seat && seat.id === p.playerId);
+        if (s) s.chips += p.totalWon;
+      });
+      payouts2.forEach(p => {
+        const s = this.seats.find(seat => seat && seat.id === p.playerId);
+        if (s) s.chips += p.totalWon;
+      });
+
+      this.handWinners = payouts1.map(p => ({
+        playerId: p.playerId,
+        name: this.seats.find(s => s && s.id === p.playerId)?.name || '玩家',
+        totalWon: p.totalWon,
+        description: '降落伞双跑马结算'
+      }));
+    } else {
+      // 标准单次结算
+      const evaluated = inHand.map(it => {
+        const all = [...it.p.holeCards, ...this.communityCards];
+        const b = evaluateHand(all);
+        it.p.bestHand = b;
+        it.p.showCards = true;
+        return { id: it.p.id, name: it.p.name, totalBet: it.p.totalBet, folded: it.p.folded, bestHand: b, is27Hand: it.p.is27Hand };
+      });
+
+      const payouts = PotManager.distributePots(evaluated, this.pot);
+      this.handWinners = payouts.map(w => {
+        const p = this.seats.find(s => s && s.id === w.playerId);
+        if (p) p.chips += w.totalWon;
+        const info = evaluated.find(e => e.id === w.playerId);
+
+        if (info && info.is27Hand) {
+          this.bounty27Winners.push(w.playerId);
+          this.log(`🔥 玩家 [${info.name}] 凭 2-7 获胜！可触发 2/7 绝杀炸场特效！`);
+        }
+
+        return { playerId: w.playerId, name: info ? info.name : '未知', totalWon: w.totalWon, description: info ? info.bestHand.description : '' };
+      });
+    }
 
     this.recordHandResult();
     this.handWinners.forEach(w => this.log(`🏆 [${w.name}] 赢得 ${w.totalWon} 筹码 (${w.description})`));
@@ -829,7 +856,6 @@ class PokerTable {
     clearInterval(this.timerInterval);
     this.notify();
 
-    // 4 秒后全自动开启下一局！
     setTimeout(() => {
       const active = this.getActiveSeats();
       if (active.length >= 2) {
@@ -856,6 +882,8 @@ class PokerTable {
       bigBlindSeat: this.bigBlindSeat,
       currentActorSeat: this.currentActorSeat,
       actionTimeRemaining: this.actionTimeRemaining,
+      runItTwice: this.runItTwice,
+      board2Cards: this.board2Cards.map(c => c.toJSON()),
       handWinners: this.handWinners,
       bounty27Eligible: this.bounty27Winners.includes(viewerId),
       handCount: this.handCount,
@@ -885,7 +913,7 @@ class PokerTable {
   }
 }
 
-// ================= Socket.io 房间管理 =================
+// ================= Socket.io 实时通信 & 全屏弹幕 =================
 const rooms = new Map();
 
 function generateRoomId() {
@@ -980,16 +1008,35 @@ io.on('connection', socket => {
     if (room) callback(room.table.toggleSitOut(currentPlayerId, sittingOut));
   });
 
-  socket.on('trigger_parachute', callback => {
-    if (!currentRoomId || !currentPlayerId) return;
+  socket.on('toggle_run_it_twice', ({ enabled }, callback) => {
+    if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
-    if (room) callback(room.table.triggerParachute(currentPlayerId, 1000));
+    if (room) {
+      room.table.toggleRunItTwice(enabled);
+      if (callback) callback({ success: true });
+    }
   });
 
-  socket.on('claim_27_bounty', callback => {
+  socket.on('trigger_27_effect', callback => {
     if (!currentRoomId || !currentPlayerId) return;
     const room = rooms.get(currentRoomId);
-    if (room) callback(room.table.claim27Bounty(currentPlayerId));
+    if (!room) return;
+    const res = room.table.trigger27ShowEffect(currentPlayerId);
+    if (res.success) {
+      // 向全房间广播 2-7 霸气炸场特效与置顶全屏弹幕
+      io.to(currentRoomId).emit('broadcast_27_effect', { winnerName: res.winnerName });
+    }
+    if (callback) callback(res);
+  });
+
+  socket.on('send_danmaku', ({ text, senderName }) => {
+    if (!currentRoomId) return;
+    io.to(currentRoomId).emit('new_danmaku', {
+      id: Date.now() + Math.random(),
+      text,
+      sender: senderName || '玩家',
+      color: ['#f59e0b', '#38bdf8', '#34d399', '#f43f5e', '#a855f7'][Math.floor(Math.random() * 5)]
+    });
   });
 
   socket.on('add_bot', (opts, callback) => {
