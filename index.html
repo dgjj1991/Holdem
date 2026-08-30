@@ -1414,10 +1414,10 @@
         const bb = state.bigBlind;
 
         let target = cur + minR;
-        if (type === '25%') target = Math.max(cur + minR, Math.round(pot * 0.25));
-        else if (type === '50%') target = Math.max(cur + minR, Math.round(pot * 0.5));
-        else if (type === '75%') target = Math.max(cur + minR, Math.round(pot * 0.75));
-        else if (type === '100%') target = Math.max(cur + minR, pot);
+        if (type === '25%') target = Math.max(cur + minR, cur + Math.round(pot * 0.25));
+        else if (type === '50%') target = Math.max(cur + minR, cur + Math.round(pot * 0.5));
+        else if (type === '75%') target = Math.max(cur + minR, cur + Math.round(pot * 0.75));
+        else if (type === '100%') target = Math.max(cur + minR, cur + pot);
         else if (type === 'all_in') { this.performAction('allIn'); return; }
 
         this.currentBetSliderValue = target;
