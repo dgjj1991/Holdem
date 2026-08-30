@@ -413,18 +413,20 @@ class PokerBot {
 
 // ================= 专业德州牌桌状态机 =================
 class PokerTable {
-  constructor({ id, hostId, hostName = '房主', name = 'poker', maxSeats = 9, gameMode = 'CASH', smallBlind = 10, bigBlind = 20, defaultBuyIn = 1000 }) {
+  constructor({ id, hostId, hostName = '房主', name = 'poker', maxSeats = 9, gameMode = 'CASH', smallBlind = 10, bigBlind = 20, defaultBuyIn = 1000, durationMinutes = 0 }) {
     this.id = id;
     this.hostId = hostId;
     this.hostName = hostName;
     this.name = name;
     this.maxSeats = maxSeats;
     this.gameMode = gameMode;
-    this.smallBlind = smallBlind;
-    this.bigBlind = bigBlind;
-    this.defaultBuyIn = defaultBuyIn;
+    this.smallBlind = parseInt(smallBlind, 10) || 10;
+    this.bigBlind = parseInt(bigBlind, 10) || (this.smallBlind * 2);
+    this.defaultBuyIn = parseInt(defaultBuyIn, 10) || 1000;
+    this.durationMinutes = parseInt(durationMinutes, 10) || 0;
     this.startTime = new Date();
     this.endTime = null;
+    this.expireTimestamp = this.durationMinutes > 0 ? (Date.now() + this.durationMinutes * 60 * 1000) : null;
 
     if (this.gameMode === 'TOURNAMENT') {
       this.blindLevel = 1;
@@ -1137,11 +1139,24 @@ class PokerTable {
     clearInterval(this.timerInterval);
     this.notify();
 
-    // 如果是摊牌比牌，给玩家 7.5 秒充裕时间看牌与复盘；弃牌获胜给 4.5 秒
+    // 检查比赛时长是否已到期
+    if (this.expireTimestamp && Date.now() >= this.expireTimestamp && !this.isGameEnded) {
+      this.log(`⏰【比赛时间已到】本场设定的 ${this.durationMinutes} 分钟比赛已全部打完，系统正在自动结算生成战报！`);
+      setTimeout(() => this.endGameSession(), 3500);
+      return;
+    }
+
     const waitTime = this.stage === 'SHOWDOWN' || (this.handWinners && this.handWinners.some(w => w.description !== '对手全部弃牌')) ? 7500 : 4500;
 
     setTimeout(() => {
       if (this.isPaused || this.isGameEnded) return;
+
+      if (this.expireTimestamp && Date.now() >= this.expireTimestamp) {
+        this.log(`⏰【比赛时间已到】本场设定的 ${this.durationMinutes} 分钟比赛已结束！`);
+        this.endGameSession();
+        return;
+      }
+
       const active = this.getActiveSeats();
       if (active.length >= 2) {
         this.startNewHand();
@@ -1168,6 +1183,8 @@ class PokerTable {
       hostName: this.hostName,
       name: this.name,
       gameMode: this.gameMode,
+      durationMinutes: this.durationMinutes,
+      remainingDurationSeconds: this.expireTimestamp ? Math.max(0, Math.floor((this.expireTimestamp - Date.now()) / 1000)) : -1,
       isHost: isHost,
       isPaused: this.isPaused,
       isGameEnded: this.isGameEnded,
@@ -1286,7 +1303,11 @@ io.on('connection', socket => {
       hostId: options.playerId,
       hostName: options.hostName || '房主',
       name: options.name || 'poker',
-      gameMode: options.gameMode || 'CASH'
+      gameMode: options.gameMode || 'CASH',
+      smallBlind: options.smallBlind || 10,
+      bigBlind: options.bigBlind || 20,
+      defaultBuyIn: options.defaultBuyIn || 1000,
+      durationMinutes: options.durationMinutes || 0
     });
 
     table.onStateChange = () => {

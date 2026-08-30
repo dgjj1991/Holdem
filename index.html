@@ -375,6 +375,11 @@
     </div>
 
     <div class="flex items-center gap-2">
+      <!-- 比赛倒计时 -->
+      <div id="badge-room-timer" class="hidden px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[10px] font-mono-code font-extrabold flex items-center gap-1">
+        <span>⏳</span><span id="label-room-timer">--:--</span>
+      </div>
+
       <div class="px-1.5 py-0.2 rounded bg-black/60 border border-slate-700/60 flex flex-col items-end">
         <span class="text-[8px] text-slate-400 scale-90 leading-tight">网络延时</span>
         <span id="label-ping" class="text-[9px] font-mono-code font-bold text-emerald-400 leading-tight">41ms</span>
@@ -1143,9 +1148,33 @@
       </div>
 
       <div id="panel-cash" class="space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="space-y-1">
+            <label class="text-xs font-semibold text-slate-300">房间名称</label>
+            <input type="text" id="input-room-name-cash" value="poker" maxlength="16" class="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-amber-300 focus:outline-none focus:border-amber-400" placeholder="如：poker">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-semibold text-slate-300">大小盲注</label>
+            <select id="select-blinds-cash" class="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-emerald-400 focus:outline-none focus:border-amber-400">
+              <option value="5/10">🪙 5 / 10</option>
+              <option value="10/20" selected>🪙 10 / 20 (标准)</option>
+              <option value="20/40">🪙 20 / 40 (中级)</option>
+              <option value="50/100">🪙 50 / 100 (豪客)</option>
+            </select>
+          </div>
+        </div>
+
         <div class="space-y-1">
-          <label class="text-xs font-semibold text-slate-300">房间名称</label>
-          <input type="text" id="input-room-name-cash" value="poker" maxlength="16" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-amber-300 focus:outline-none focus:border-amber-400" placeholder="如：poker">
+          <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+            <span>比赛时长 / 自动结束规则</span>
+            <span class="text-[10px] text-amber-400">到期自动结算</span>
+          </label>
+          <div class="grid grid-cols-4 gap-1.5 text-center text-[11px] font-bold">
+            <button type="button" onclick="app.setRoomDuration(0, this)" class="btn-duration py-1.5 rounded-xl border border-amber-500 bg-amber-500 text-slate-950 shadow">无限</button>
+            <button type="button" onclick="app.setRoomDuration(30, this)" class="btn-duration py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">30分</button>
+            <button type="button" onclick="app.setRoomDuration(60, this)" class="btn-duration py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">60分</button>
+            <button type="button" onclick="app.setRoomDuration(120, this)" class="btn-duration py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">120分</button>
+          </div>
         </div>
 
         <button onclick="app.createOnlineRoom('CASH')" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow transition">
@@ -1665,17 +1694,38 @@
         this.socket.on('broadcast_game_summary', ({ summary }) => this.showSummaryModal(summary));
       }
 
+      setRoomDuration(minutes, btn) {
+        this.selectedDurationMinutes = minutes;
+        document.querySelectorAll('.btn-duration').forEach(b => {
+          b.className = 'btn-duration py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white';
+        });
+        if (btn) {
+          btn.className = 'btn-duration py-1.5 rounded-xl border border-amber-500 bg-amber-500 text-slate-950 shadow';
+        }
+      }
+
       createOnlineRoom(gameMode = 'CASH') {
         this.playerName = document.getElementById('input-player-name').value.trim() || '菠萝无敌';
         const customRoomName = document.getElementById('input-room-name-cash').value.trim() || 'poker';
         this.saveUserSession();
+
+        let sb = 10, bb = 20;
+        const blindsEl = document.getElementById('select-blinds-cash');
+        if (blindsEl) {
+          const parts = blindsEl.value.split('/');
+          sb = parseInt(parts[0], 10) || 10;
+          bb = parseInt(parts[1], 10) || 20;
+        }
 
         this.ensureSocketConnection(() => {
           this.socket.emit('create_room', {
             playerId: this.playerId,
             hostName: this.playerName,
             name: customRoomName,
-            gameMode: gameMode
+            gameMode: gameMode,
+            smallBlind: sb,
+            bigBlind: bb,
+            durationMinutes: this.selectedDurationMinutes || 0
           }, (res) => {
             if (res && res.success) {
               this.hideLobbyModal();
@@ -1828,6 +1878,19 @@
 
       renderTable(state) {
         this.tableState = state;
+
+        const timerBadge = document.getElementById('badge-room-timer');
+        if (timerBadge) {
+          if (state.remainingDurationSeconds >= 0 && !state.isGameEnded) {
+            timerBadge.classList.remove('hidden');
+            const m = Math.floor(state.remainingDurationSeconds / 60);
+            const s = state.remainingDurationSeconds % 60;
+            document.getElementById('label-room-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+          } else {
+            timerBadge.classList.add('hidden');
+          }
+        }
+
         document.getElementById('watermark-stage-hand').innerText = `训练赛◆国际扑克 第 ${state.handCount || 1} 手`;
         document.getElementById('watermark-blind-level').innerText = `🪙 ${state.smallBlind}/${state.bigBlind} 级别:1`;
         document.getElementById('watermark-room-name').innerText = `< ${state.name || 'poker'} >`;
