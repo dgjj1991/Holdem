@@ -1,12 +1,23 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh" xml:lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="content-language" content="zh-CN" />
+  <meta http-equiv="Access-Control-Allow-Origin" content="*">
+  <meta name='renderer' content='webkit'/>
+  <meta name='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
+  <meta name='full-screen' content='true' />
+  <meta name='x5-fullscreen' content='true' />
+  <meta http-equiv='expires' content='0' />
+  <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'/>
+  <meta http-equiv='Cache-Control' content='no-siteapp' />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="format-detection" content="telephone=no"/>
+  <meta name="apple-mobile-web-app-title" content="德扑之星"/>
   <title>德扑之星</title>
   
   <!-- Tailwind CSS CDN -->
@@ -637,192 +648,9 @@
       <div class="space-y-2.5 text-xs text-slate-300 leading-relaxed">
         <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60 space-y-1">
           <div class="font-bold text-amber-400">什么是降落伞机制？</div>
-          <div>当有玩家全下 (All-in) 并且无后续行动时，系统支持自动多次发公共牌（跑马），平滑方差，避免因单次运气波动导致筹码清空。</div>
+          <div>当有玩家全下 (All-in) 并且无后续行动时，系统支持自动多次发公共牌（跑马），平滑方差，避免因单次运气波动导致记分牌清空。</div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- ================= 弹窗 A：双重邀请好友专属弹窗 ================= -->
-  <div id="modal-invite" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 text-center">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-        <h3 class="text-base font-bold text-white">邀请好友同桌对局</h3>
-        <button onclick="document.getElementById('modal-invite').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700/80 space-y-2">
-        <div class="text-xs text-slate-400 font-semibold">方式 1：纯 4 位数字房间码</div>
-        <div id="invite-room-code-display" class="font-mono-code text-3xl font-black text-amber-400 tracking-widest py-1 bg-slate-950/80 rounded-xl border border-amber-500/30">
-          8888
-        </div>
-        <button onclick="app.copyRoomCodeOnly()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition">
-          一键复制 4 位房号发微信
-        </button>
-      </div>
-
-      <div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700/80 space-y-2">
-        <div class="text-xs text-slate-400 font-semibold">方式 2：直达房间网页链接</div>
-        <input type="text" id="invite-url-input" readonly class="w-full text-center px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-[11px] font-mono-code text-slate-300 focus:outline-none">
-        <button onclick="app.copyRoomLinkOnly()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
-          一键复制直达链接
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= 弹窗 B：比赛详情大结算战报 ================= -->
-  <div id="modal-summary" class="hidden fixed inset-0 bg-black/95 backdrop-blur-lg z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
-    <div class="w-full max-w-md rounded-3xl p-4 md:p-5 shadow-2xl space-y-4 text-center my-auto" style="background-color: #0d1626;">
-      
-      <div class="flex items-center justify-between text-slate-300 px-1">
-        <button onclick="document.getElementById('modal-summary').classList.add('hidden')" class="p-1 hover:text-white">
-          <i data-lucide="arrow-left" class="w-5 h-5"></i>
-        </button>
-        <h2 class="text-base font-bold tracking-wide text-white">比赛详情</h2>
-        <div class="w-5 h-5 opacity-70"><i data-lucide="layers" class="w-5 h-5 text-slate-400"></i></div>
-      </div>
-
-      <div class="rounded-2xl p-4 shadow-lg space-y-3 text-slate-300 border border-blue-900/40" style="background: linear-gradient(180deg, #132442 0%, #0d1a33 100%);">
-        <div id="summary-room-title" class="text-lg font-black text-white tracking-wide">poker</div>
-        
-        <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-700/40">
-          <div>
-            <div class="text-[11px] text-slate-400">基础分级别</div>
-            <div id="summary-blind-info" class="text-xs font-extrabold text-white mt-0.5">10/20(0)</div>
-          </div>
-          <div>
-            <div class="text-[11px] text-slate-400">总手数</div>
-            <div id="summary-hand-count" class="text-xs font-extrabold text-white mt-0.5">238</div>
-          </div>
-          <div>
-            <div class="text-[11px] text-slate-400">创建者</div>
-            <div id="summary-host-name" class="text-xs font-extrabold text-white mt-0.5">菠萝无敌</div>
-          </div>
-        </div>
-
-        <div id="summary-time-line" class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/80">
-          训练赛 | 国际扑克
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-2 px-1 pt-1">
-        <div class="flex flex-col items-center">
-          <div class="text-amber-400 text-xs font-extrabold mb-1">🤵 老板</div>
-          <img id="badge-boss-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Boss" class="w-12 h-12 rounded-xl border-2 border-amber-500/60 bg-slate-800 shadow-md object-cover">
-          <div id="badge-boss-name" class="text-[11px] font-bold text-slate-200 mt-1 truncate max-w-[80px]">-</div>
-        </div>
-
-        <div class="flex flex-col items-center">
-          <div class="text-amber-300 text-sm font-black mb-1">👑 MVP</div>
-          <img id="badge-mvp-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=MVP" class="w-14 h-14 rounded-xl border-2 border-amber-400 bg-slate-800 shadow-lg object-cover scale-105">
-          <div id="badge-mvp-name" class="text-xs font-black text-amber-300 mt-1 truncate max-w-[85px]">-</div>
-        </div>
-
-        <div class="flex flex-col items-center">
-          <div class="text-amber-400 text-xs font-extrabold mb-1">⚒️ 劳模</div>
-          <img id="badge-worker-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Worker" class="w-12 h-12 rounded-xl border-2 border-amber-500/60 bg-slate-800 shadow-md object-cover">
-          <div id="badge-worker-name" class="text-[11px] font-bold text-slate-200 mt-1 truncate max-w-[80px]">-</div>
-        </div>
-      </div>
-
-      <div class="rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden text-left">
-        <table class="w-full text-xs">
-          <thead class="text-slate-400 border-b border-slate-800/80 text-[11px]">
-            <tr>
-              <th class="py-2.5 px-3">昵称</th>
-              <th class="py-2.5 text-center">手数</th>
-              <th class="py-2.5 text-center">带入</th>
-              <th class="py-2.5 text-right px-3">战绩</th>
-            </tr>
-          </thead>
-          <tbody id="summary-tbody" class="divide-y divide-slate-800/50 font-mono-code"></tbody>
-        </table>
-      </div>
-
-      <div class="flex items-center justify-between gap-3 pt-2">
-        <button onclick="app.copySummaryReport()" class="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition flex items-center justify-center gap-2">
-          <i data-lucide="share" class="w-4 h-4"></i>
-          <span>一键复制战报发微信群</span>
-        </button>
-        <button onclick="document.getElementById('modal-summary').classList.add('hidden')" class="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition">
-          关闭
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ================= 弹窗 C：大厅首页 ================= -->
-  <div id="modal-lobby" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
-      <div class="text-center space-y-1">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center font-poker text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/30">
-          ♠
-        </div>
-        <h2 class="text-xl font-extrabold text-white">德扑之星 Pro 大厅</h2>
-        <p class="text-xs text-slate-400">选择游戏模式 · 纯 4 位数字房间码极速畅玩</p>
-      </div>
-
-      <div class="space-y-1">
-        <label class="text-xs font-semibold text-slate-300">您的玩家昵称</label>
-        <input type="text" id="input-player-name" value="菠萝无敌" maxlength="10" oninput="app.onNameChange(this.value)" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-amber-400" placeholder="输入昵称">
-      </div>
-
-      <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-800/80 rounded-2xl border border-slate-700/60">
-        <button id="tab-cash" onclick="app.switchLobbyMode('cash')" class="py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow transition">
-          👥 好友常规
-        </button>
-        <button id="tab-sng" onclick="app.switchLobbyMode('sng')" class="py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
-          🏆 SNG锦标赛
-        </button>
-        <button id="tab-ai" onclick="app.switchLobbyMode('ai')" class="py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
-          🤖 9 AI 练习
-        </button>
-      </div>
-
-      <div id="panel-cash" class="space-y-3">
-        <div class="space-y-1">
-          <label class="text-xs font-semibold text-slate-300">房间名称</label>
-          <input type="text" id="input-room-name-cash" value="poker" maxlength="16" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-amber-300 focus:outline-none focus:border-amber-400" placeholder="如：poker">
-        </div>
-
-        <button onclick="app.createOnlineRoom('CASH')" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow transition">
-          创建 4 位数字私人房间 (房主)
-        </button>
-
-        <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
-          <input type="text" id="input-room-code" placeholder="输入 4 位数字房号" maxlength="4" class="flex-1 font-mono-code px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
-          <button onclick="app.joinOnlineRoom()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">
-            快速加房
-          </button>
-        </div>
-      </div>
-
-      <div id="panel-sng" class="hidden space-y-3">
-        <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1 leading-relaxed">
-          <div class="font-bold text-amber-400 flex items-center gap-1"><i data-lucide="award" class="w-3.5 h-3.5"></i> SNG 淘汰赛规则：</div>
-          <div>每人 1000 起始筹码，每 5 分钟定时升盲，最后决出总冠军！</div>
-        </div>
-
-        <button onclick="app.createOnlineRoom('TOURNAMENT')" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow transition">
-          创建 SNG 锦标赛房间
-        </button>
-      </div>
-
-      <div id="panel-ai" class="hidden space-y-3">
-        <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1 leading-relaxed">
-          <div class="font-bold text-emerald-400 flex items-center gap-1"><i data-lucide="bot" class="w-3.5 h-3.5"></i> 单人 AI 陪练房：</div>
-          <div>系统为您安排 8 名具备紧凶、松凶不同风格的 AI 高手同台对练，即开即打！</div>
-        </div>
-
-        <button onclick="app.createOnlineRoom('PVE')" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow transition">
-          进入 9 人 AI 练习赛 (即开即玩)
-        </button>
-      </div>
-
     </div>
   </div>
 
