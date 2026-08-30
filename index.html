@@ -133,6 +133,63 @@
       transform: scale(0.95);
     }
 
+    /* 1:1 原版亮白质感弹窗面板 (比赛设置) */
+    .dpzx-white-modal {
+      background: #eef3f7;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      color: #2c3e50;
+    }
+
+    /* 1:1 原版蓝色实心圆角按钮 */
+    .dpzx-blue-btn {
+      background: #2196f3;
+      color: #ffffff;
+      font-weight: 700;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(33, 150, 243, 0.4);
+      transition: all 0.15s ease;
+    }
+    .dpzx-blue-btn:active {
+      background: #1976d2;
+      transform: scale(0.97);
+    }
+
+    /* iOS 风格平滑切换 Switch */
+    .ios-switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+    }
+    .ios-switch input { opacity: 0; width: 0; height: 0; }
+    .ios-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 24px;
+    }
+    .ios-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .ios-slider {
+      background-color: #2196f3;
+    }
+    input:checked + .ios-slider:before {
+      transform: translateX(18px);
+    }
+
     /* 底部弧形半透明底栏 */
     .dpzx-curved-footer {
       background: linear-gradient(180deg, rgba(14, 27, 39, 0.85) 0%, rgba(8, 16, 25, 0.98) 100%);
@@ -150,10 +207,10 @@
     .dpzx-acting { animation: actor-pulse 1.2s infinite ease-in-out; }
 
     /* 四色扑克牌 */
-    .card-suit-s { color: #0f172a; } /* 黑桃 */
-    .card-suit-h { color: #dc2626; } /* 红桃 */
-    .card-suit-d { color: #2563eb; } /* 方块 */
-    .card-suit-c { color: #16a34a; } /* 草花 */
+    .card-suit-s { color: #0f172a; }
+    .card-suit-h { color: #dc2626; }
+    .card-suit-d { color: #2563eb; }
+    .card-suit-c { color: #16a34a; }
 
     /* 底部行动抽屉 */
     .action-drawer {
@@ -192,19 +249,16 @@
 
   <!-- ================= 1:1 原版顶部极简状态栏 ================= -->
   <header class="h-8 px-3 flex items-center justify-between z-20 shrink-0 pt-1">
-    <!-- 左侧绿色警示标语 -->
     <div class="text-[10px] text-emerald-300/80 tracking-tight font-medium select-none">
       绿色竞技 远离赌博 · 谨防诈骗 健康生活
     </div>
 
-    <!-- 右侧网络延时与消息图标 -->
     <div class="flex items-center gap-2">
       <div class="px-1.5 py-0.2 rounded bg-black/60 border border-slate-700/60 flex flex-col items-end">
         <span class="text-[8px] text-slate-400 scale-90 leading-tight">网络延时</span>
-        <span id="label-ping" class="text-[9px] font-mono-code font-bold text-emerald-400 leading-tight">42ms</span>
+        <span id="label-ping" class="text-[9px] font-mono-code font-bold text-emerald-400 leading-tight">57ms</span>
       </div>
 
-      <!-- 消息红点气泡 -->
       <button onclick="app.toggleDanmakuInput()" class="relative p-1 text-slate-300 hover:text-white">
         <i data-lucide="message-square" class="w-5 h-5"></i>
         <span class="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center scale-90">1</span>
@@ -241,7 +295,6 @@
       <div class="text-center opacity-40 select-none space-y-0.5 pointer-events-none">
         <div class="text-xs font-semibold text-slate-300 tracking-wider" id="watermark-stage-hand">训练赛◆国际扑克 第 1 手</div>
         
-        <!-- 德扑之星 Logo 水印 -->
         <div class="flex items-center justify-center gap-1.5 py-0.5">
           <div class="w-6 h-6 rounded-full border border-slate-400 flex items-center justify-center font-black text-slate-300 text-xs">♠</div>
           <div class="flex flex-col items-start leading-none">
@@ -254,7 +307,6 @@
         <div class="text-xs font-bold text-slate-300" id="watermark-room-name">&lt; poker &gt;</div>
         <div class="text-xs font-mono-code font-semibold text-slate-400" id="watermark-room-code">邀请码:954263</div>
         
-        <!-- 底部徽章 🛡️ ㉗ -->
         <div class="flex items-center justify-center gap-2 pt-0.5 text-slate-400 text-xs font-bold">
           <span class="px-1.5 py-0.2 rounded border border-slate-600/60 bg-slate-900/40">🛡️</span>
           <span class="px-1.5 py-0.2 rounded border border-slate-600/60 bg-slate-900/40">㉗</span>
@@ -390,8 +442,6 @@
     </div>
 
     <div class="flex-1 overflow-y-auto py-2 space-y-3 pr-1 text-xs">
-      
-      <!-- 皇家同花顺 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
@@ -403,7 +453,6 @@
         <span class="text-slate-200 font-bold">皇家同花顺</span>
       </div>
 
-      <!-- 同花顺 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">6♥</span>
@@ -415,7 +464,6 @@
         <span class="text-slate-200 font-bold">同花顺</span>
       </div>
 
-      <!-- 四条(金刚) -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
@@ -427,7 +475,6 @@
         <span class="text-slate-200 font-bold">四条(金刚)</span>
       </div>
 
-      <!-- 葫芦 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
@@ -439,7 +486,6 @@
         <span class="text-slate-200 font-bold">葫芦</span>
       </div>
 
-      <!-- 同花 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
@@ -451,7 +497,6 @@
         <span class="text-slate-200 font-bold">同花</span>
       </div>
 
-      <!-- 顺子 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♠</span>
@@ -463,7 +508,6 @@
         <span class="text-slate-200 font-bold">顺子</span>
       </div>
 
-      <!-- 三条 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
@@ -475,7 +519,6 @@
         <span class="text-slate-200 font-bold">三条</span>
       </div>
 
-      <!-- 两对 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
@@ -487,7 +530,6 @@
         <span class="text-slate-200 font-bold">两对</span>
       </div>
 
-      <!-- 一对 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
@@ -499,7 +541,6 @@
         <span class="text-slate-200 font-bold">一对</span>
       </div>
 
-      <!-- 高牌 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
@@ -510,7 +551,6 @@
         </div>
         <span class="text-slate-200 font-bold">高牌</span>
       </div>
-
     </div>
   </div>
 
@@ -553,7 +593,153 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗 2：【桌面设置】弹窗 ================= -->
+  <!-- ================= 1:1 原版【比赛设置】亮白现代弹窗 ================= -->
+  <div id="modal-match-rules" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="dpzx-white-modal w-full max-w-sm p-6 shadow-2xl space-y-5 text-slate-800 relative">
+      
+      <!-- 标题 -->
+      <div class="text-center">
+        <h3 class="text-lg font-black text-slate-800">比赛设置</h3>
+      </div>
+
+      <!-- 比赛加时 -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-bold text-slate-700">
+          比赛加时:<span class="text-blue-600 font-black ml-1" id="label-match-extra-time">0分钟</span>
+        </div>
+        <div class="bg-slate-200/80 p-2.5 rounded-xl space-y-1">
+          <input type="range" min="0" max="5" step="1" value="0" oninput="app.onMatchExtraTimeChange(this.value)" class="w-full h-1.5 bg-slate-400 rounded-lg cursor-pointer accent-blue-600">
+          <div class="flex justify-between text-[10px] font-bold text-slate-500 px-0.5">
+            <span>0</span>
+            <span>15</span>
+            <span>30</span>
+            <span>60</span>
+            <span>90</span>
+            <span>120</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 带入记分牌上限 -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-bold text-slate-700">
+          带入记分牌上限:<span class="text-blue-600 font-black ml-1" id="label-match-buyin-limit">无限制</span>
+        </div>
+        <div class="bg-slate-200/80 p-2.5 rounded-xl space-y-1">
+          <input type="range" min="0" max="5" step="1" value="0" oninput="app.onMatchBuyInLimitChange(this.value)" class="w-full h-1.5 bg-slate-400 rounded-lg cursor-pointer accent-blue-600">
+          <div class="flex justify-between text-[10px] font-bold text-slate-500 px-0.5">
+            <span>无限制</span>
+            <span>8K</span>
+            <span>12K</span>
+            <span>16K</span>
+            <span>20K</span>
+            <span>30K</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 确定按钮 -->
+      <div class="flex justify-center">
+        <button onclick="app.submitMatchSettings()" class="dpzx-blue-btn px-8 py-1.5 text-xs font-black">
+          确定
+        </button>
+      </div>
+
+      <!-- 6 大规则开关矩阵 (2列 x 3行) -->
+      <div class="grid grid-cols-2 gap-y-3 gap-x-4 pt-1 border-t border-slate-300/80 text-xs font-bold text-slate-700">
+        
+        <!-- 降落伞 -->
+        <div class="flex items-center justify-between">
+          <span>降落伞</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="rule-parachute" checked onchange="app.onRuleToggle('parachute', this.checked)">
+            <span class="ios-slider"></span>
+          </label>
+        </div>
+
+        <!-- IP-GPS限制 -->
+        <div class="flex items-center justify-between">
+          <span>IP-GPS限制</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="rule-ipgps" onchange="app.onRuleToggle('ipgps', this.checked)">
+            <span class="ios-slider"></span>
+          </label>
+        </div>
+
+        <!-- 27操作秀 -->
+        <div class="flex items-center justify-between">
+          <span>27操作秀</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="rule-27show" checked onchange="app.onRuleToggle('27show', this.checked)">
+            <span class="ios-slider"></span>
+          </label>
+        </div>
+
+        <!-- 带入控制 -->
+        <div class="flex items-center justify-between">
+          <span>带入控制</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="rule-buyin-control" onchange="app.onRuleToggle('buyinControl', this.checked)">
+            <span class="ios-slider"></span>
+          </label>
+        </div>
+
+        <!-- 延时看牌 -->
+        <div class="flex items-center justify-between">
+          <span>延时看牌</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="rule-delay-reveal" onchange="app.onRuleToggle('delayReveal', this.checked)">
+            <span class="ios-slider"></span>
+          </label>
+        </div>
+
+        <!-- 禁止模拟器 -->
+        <div class="flex items-center justify-between">
+          <span>禁止模拟器</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="rule-ban-emulator" onchange="app.onRuleToggle('banEmulator', this.checked)">
+            <span class="ios-slider"></span>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- 底部两大操作按钮：暂停发牌 / 提前结束 -->
+      <div class="grid grid-cols-2 gap-4 pt-2">
+        <button onclick="app.hostTogglePause()" id="btn-modal-pause" class="dpzx-blue-btn py-2.5 text-xs font-black">
+          暂停发牌
+        </button>
+        <button onclick="app.hostEndGame()" class="dpzx-blue-btn py-2.5 text-xs font-black">
+          提前结束
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 4：【降落伞说明】弹窗 ================= -->
+  <div id="modal-parachute" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="shield" class="w-5 h-5 text-teal-400"></i>
+          <span>降落伞 (跑马) 说明</span>
+        </h3>
+        <button onclick="document.getElementById('modal-parachute').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2.5 text-xs text-slate-300 leading-relaxed">
+        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60 space-y-1">
+          <div class="font-bold text-amber-400">什么是降落伞机制？</div>
+          <div>当有玩家全下 (All-in) 并且无后续行动时，系统支持自动多次发公共牌（跑马），平滑方差，避免因单次运气波动导致记分牌清空。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 5：【桌面设置】弹窗 ================= -->
   <div id="modal-settings" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
@@ -594,63 +780,186 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗 3：【比赛设置 / 规则】弹窗 ================= -->
-  <div id="modal-match-rules" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="sliders" class="w-5 h-5 text-blue-400"></i>
-          <span>比赛设置与规则</span>
-        </h3>
-        <button onclick="document.getElementById('modal-match-rules').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+  <!-- ================= 弹窗 A：双重邀请好友专属弹窗 ================= -->
+  <div id="modal-invite" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 text-center">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <h3 class="text-base font-bold text-white">邀请好友同桌对局</h3>
+        <button onclick="document.getElementById('modal-invite').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="space-y-2 text-xs text-slate-300">
-        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
-          <span class="text-slate-400">盲注结构</span>
-          <span class="font-bold text-amber-300">10 / 20 (前注 0)</span>
+      <div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700/80 space-y-2">
+        <div class="text-xs text-slate-400 font-semibold">方式 1：纯 4 位数字房间码</div>
+        <div id="invite-room-code-display" class="font-mono-code text-3xl font-black text-amber-400 tracking-widest py-1 bg-slate-950/80 rounded-xl border border-amber-500/30">
+          8888
         </div>
-        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
-          <span class="text-slate-400">思考倒计时</span>
-          <span class="font-bold text-slate-200">20 秒 / 轮</span>
-        </div>
-        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
-          <span class="text-slate-400">免费加时</span>
-          <span class="font-bold text-emerald-400">+30 秒 / 次</span>
-        </div>
-        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
-          <span class="text-slate-400">时间银行 (Time Bank)</span>
-          <span class="font-bold text-indigo-400">300 秒储备</span>
-        </div>
-        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
-          <span class="text-slate-400">2-7 绝杀炸场</span>
-          <span class="font-bold text-amber-400">开启</span>
-        </div>
+        <button onclick="app.copyRoomCodeOnly()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition">
+          一键复制 4 位房号发微信
+        </button>
+      </div>
+
+      <div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700/80 space-y-2">
+        <div class="text-xs text-slate-400 font-semibold">方式 2：直达房间网页链接</div>
+        <input type="text" id="invite-url-input" readonly class="w-full text-center px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-[11px] font-mono-code text-slate-300 focus:outline-none">
+        <button onclick="app.copyRoomLinkOnly()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
+          一键复制直达链接
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- ================= 弹窗 4：【降落伞说明】弹窗 ================= -->
-  <div id="modal-parachute" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="shield" class="w-5 h-5 text-teal-400"></i>
-          <span>降落伞 (跑马) 说明</span>
-        </h3>
-        <button onclick="document.getElementById('modal-parachute').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
-          <i data-lucide="x" class="w-5 h-5"></i>
+  <!-- ================= 弹窗 B：比赛详情大结算战报 ================= -->
+  <div id="modal-summary" class="hidden fixed inset-0 bg-black/95 backdrop-blur-lg z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
+    <div class="w-full max-w-md rounded-3xl p-4 md:p-5 shadow-2xl space-y-4 text-center my-auto" style="background-color: #0d1626;">
+      
+      <div class="flex items-center justify-between text-slate-300 px-1">
+        <button onclick="document.getElementById('modal-summary').classList.add('hidden')" class="p-1 hover:text-white">
+          <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h2 class="text-base font-bold tracking-wide text-white">比赛详情</h2>
+        <div class="w-5 h-5 opacity-70"><i data-lucide="layers" class="w-5 h-5 text-slate-400"></i></div>
+      </div>
+
+      <div class="rounded-2xl p-4 shadow-lg space-y-3 text-slate-300 border border-blue-900/40" style="background: linear-gradient(180deg, #132442 0%, #0d1a33 100%);">
+        <div id="summary-room-title" class="text-lg font-black text-white tracking-wide">poker</div>
+        
+        <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-700/40">
+          <div>
+            <div class="text-[11px] text-slate-400">基础分级别</div>
+            <div id="summary-blind-info" class="text-xs font-extrabold text-white mt-0.5">10/20(0)</div>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-400">总手数</div>
+            <div id="summary-hand-count" class="text-xs font-extrabold text-white mt-0.5">238</div>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-400">创建者</div>
+            <div id="summary-host-name" class="text-xs font-extrabold text-white mt-0.5">菠萝无敌</div>
+          </div>
+        </div>
+
+        <div id="summary-time-line" class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/80">
+          训练赛 | 国际扑克
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 px-1 pt-1">
+        <div class="flex flex-col items-center">
+          <div class="text-amber-400 text-xs font-extrabold mb-1">🤵 老板</div>
+          <img id="badge-boss-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Boss" class="w-12 h-12 rounded-xl border-2 border-amber-500/60 bg-slate-800 shadow-md object-cover">
+          <div id="badge-boss-name" class="text-[11px] font-bold text-slate-200 mt-1 truncate max-w-[80px]">-</div>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <div class="text-amber-300 text-sm font-black mb-1">👑 MVP</div>
+          <img id="badge-mvp-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=MVP" class="w-14 h-14 rounded-xl border-2 border-amber-400 bg-slate-800 shadow-lg object-cover scale-105">
+          <div id="badge-mvp-name" class="text-xs font-black text-amber-300 mt-1 truncate max-w-[85px]">-</div>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <div class="text-amber-400 text-xs font-extrabold mb-1">⚒️ 劳模</div>
+          <img id="badge-worker-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Worker" class="w-12 h-12 rounded-xl border-2 border-amber-500/60 bg-slate-800 shadow-md object-cover">
+          <div id="badge-worker-name" class="text-[11px] font-bold text-slate-200 mt-1 truncate max-w-[80px]">-</div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden text-left">
+        <table class="w-full text-xs">
+          <thead class="text-slate-400 border-b border-slate-800/80 text-[11px]">
+            <tr>
+              <th class="py-2.5 px-3">昵称</th>
+              <th class="py-2.5 text-center">手数</th>
+              <th class="py-2.5 text-center">带入</th>
+              <th class="py-2.5 text-right px-3">战绩</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody" class="divide-y divide-slate-800/50 font-mono-code"></tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pt-2">
+        <button onclick="app.copySummaryReport()" class="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition flex items-center justify-center gap-2">
+          <i data-lucide="share" class="w-4 h-4"></i>
+          <span>一键复制战报发微信群</span>
+        </button>
+        <button onclick="document.getElementById('modal-summary').classList.add('hidden')" class="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition">
+          关闭
         </button>
       </div>
 
-      <div class="space-y-2.5 text-xs text-slate-300 leading-relaxed">
-        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60 space-y-1">
-          <div class="font-bold text-amber-400">什么是降落伞机制？</div>
-          <div>当有玩家全下 (All-in) 并且无后续行动时，系统支持自动多次发公共牌（跑马），平滑方差，避免因单次运气波动导致记分牌清空。</div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 C：大厅首页 ================= -->
+  <div id="modal-lobby" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center font-poker text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/30">
+          ♠
+        </div>
+        <h2 class="text-xl font-extrabold text-white">德扑之星 Pro 大厅</h2>
+        <p class="text-xs text-slate-400">选择游戏模式 · 纯 4 位数字房间码极速畅玩</p>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-xs font-semibold text-slate-300">您的玩家昵称</label>
+        <input type="text" id="input-player-name" value="菠萝无敌" maxlength="10" oninput="app.onNameChange(this.value)" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-amber-400" placeholder="输入昵称">
+      </div>
+
+      <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-800/80 rounded-2xl border border-slate-700/60">
+        <button id="tab-cash" onclick="app.switchLobbyMode('cash')" class="py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow transition">
+          👥 好友常规
+        </button>
+        <button id="tab-sng" onclick="app.switchLobbyMode('sng')" class="py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
+          🏆 SNG锦标赛
+        </button>
+        <button id="tab-ai" onclick="app.switchLobbyMode('ai')" class="py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
+          🤖 9 AI 练习
+        </button>
+      </div>
+
+      <div id="panel-cash" class="space-y-3">
+        <div class="space-y-1">
+          <label class="text-xs font-semibold text-slate-300">房间名称</label>
+          <input type="text" id="input-room-name-cash" value="poker" maxlength="16" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-amber-300 focus:outline-none focus:border-amber-400" placeholder="如：poker">
+        </div>
+
+        <button onclick="app.createOnlineRoom('CASH')" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow transition">
+          创建 4 位数字私人房间 (房主)
+        </button>
+
+        <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
+          <input type="text" id="input-room-code" placeholder="输入 4 位数字房号" maxlength="4" class="flex-1 font-mono-code px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
+          <button onclick="app.joinOnlineRoom()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">
+            快速加房
+          </button>
         </div>
       </div>
+
+      <div id="panel-sng" class="hidden space-y-3">
+        <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1 leading-relaxed">
+          <div class="font-bold text-amber-400 flex items-center gap-1"><i data-lucide="award" class="w-3.5 h-3.5"></i> SNG 淘汰赛规则：</div>
+          <div>每人 1000 起始筹码，每 5 分钟定时升盲，最后决出总冠军！</div>
+        </div>
+
+        <button onclick="app.createOnlineRoom('TOURNAMENT')" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow transition">
+          创建 SNG 锦标赛房间
+        </button>
+      </div>
+
+      <div id="panel-ai" class="hidden space-y-3">
+        <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1 leading-relaxed">
+          <div class="font-bold text-emerald-400 flex items-center gap-1"><i data-lucide="bot" class="w-3.5 h-3.5"></i> 单人 AI 陪练房：</div>
+          <div>系统为您安排 8 名具备紧凶、松凶不同风格的 AI 高手同台对练，即开即打！</div>
+        </div>
+
+        <button onclick="app.createOnlineRoom('PVE')" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow transition">
+          进入 9 人 AI 练习赛 (即开即玩)
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -665,6 +974,8 @@
         this.isRaisePanelOpen = false;
         this.isMenuGridOpen = false;
         this.isMicOn = false;
+        this.matchExtraTimeMap = [0, 15, 30, 60, 90, 120];
+        this.matchBuyInLimitMap = ['无限制', '8K', '12K', '16K', '20K', '30K'];
         this.loadUserSession();
       }
 
@@ -791,6 +1102,32 @@
       openMatchRulesModal() { document.getElementById('modal-match-rules').classList.remove('hidden'); }
       openParachuteModal() { document.getElementById('modal-parachute').classList.remove('hidden'); }
 
+      onMatchExtraTimeChange(idx) {
+        const mins = this.matchExtraTimeMap[idx];
+        document.getElementById('label-match-extra-time').innerText = `${mins}分钟`;
+      }
+      onMatchBuyInLimitChange(idx) {
+        const limit = this.matchBuyInLimitMap[idx];
+        document.getElementById('label-match-buyin-limit').innerText = `${limit}`;
+      }
+      submitMatchSettings() {
+        this.showToast('比赛设置已保存并生效！', 'success');
+        document.getElementById('modal-match-rules').classList.add('hidden');
+      }
+      onRuleToggle(key, state) {
+        const map = { parachute: '降落伞', ipgps: 'IP-GPS限制', '27show': '27操作秀', buyinControl: '带入控制', delayReveal: '延时看牌', banEmulator: '禁止模拟器' };
+        this.showToast(`${map[key] || '规则'} 已${state ? '开启' : '关闭'}`, 'info');
+      }
+
+      hostTogglePause() {
+        if (this.socket) this.socket.emit('toggle_pause', (res) => {
+          if (res && res.success) {
+            document.getElementById('btn-modal-pause').innerText = res.isPaused ? '继续发牌' : '暂停发牌';
+            this.showToast(res.isPaused ? '牌局已暂停发牌' : '牌局已恢复继续发牌', 'info');
+          }
+        });
+      }
+
       toggleLeaveNextHand() {
         if (this.socket) {
           this.socket.emit('toggle_leave_next_hand', (res) => {
@@ -883,7 +1220,7 @@
         });
       }
       hostEndGame() {
-        if (confirm('确认解散比赛并生成【比赛详情】结算大报表吗？')) {
+        if (confirm('确认提前结束/解散比赛并生成【比赛详情】结算大报表吗？')) {
           if (this.socket) this.socket.emit('end_game_session', () => {});
         }
       }
@@ -921,7 +1258,7 @@
               this.hideLobbyModal();
               if (gameMode !== 'PVE') {
                 this.socket.emit('sit_down', {
-                  seatIndex: 8, // 默认坐在正底部大座 (8号位)
+                  seatIndex: 8,
                   player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
                 }, () => {});
               }
