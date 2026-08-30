@@ -417,7 +417,7 @@
         <span>⏳</span><span id="label-room-timer">--:--</span>
       </div>
 
-      <div class="px-1.5 py-0.2 rounded bg-black/60 border border-slate-700/60 flex flex-col items-end">
+      <div class="px-1.5 py-[1px] rounded bg-black/60 border border-slate-700/60 flex flex-col items-end">
         <span class="text-[8px] text-slate-400 scale-90 leading-tight">网络延时</span>
         <span id="label-ping" class="text-[9px] font-mono-code font-bold text-emerald-400 leading-tight">41ms</span>
       </div>
@@ -489,8 +489,8 @@
         <div class="text-xs font-mono-code font-semibold text-slate-400" id="watermark-room-code">邀请码:954263</div>
         
         <div class="flex items-center justify-center gap-2 pt-0.5 text-slate-400 text-xs font-bold">
-          <span class="px-1.5 py-0.2 rounded border border-slate-600/60 bg-slate-900/40">🛡️</span>
-          <span class="px-1.5 py-0.2 rounded border border-slate-600/60 bg-slate-900/40">㉗</span>
+          <span class="px-1.5 py-[1px] rounded border border-slate-600/60 bg-slate-900/40">🛡️</span>
+          <span class="px-1.5 py-[1px] rounded border border-slate-600/60 bg-slate-900/40">㉗</span>
         </div>
       </div>
 
@@ -514,13 +514,13 @@
     <div id="seats-container" class="absolute inset-0 pointer-events-none"></div>
 
     <!-- 📊 左侧悬浮拉手：实时筹码战况 -->
-    <button onclick="app.toggleLeftStatsDrawer()" class="absolute left-0 top-[40%] -translate-y-1/2 z-30 px-1.5 py-3 rounded-r-2xl bg-slate-900/90 hover:bg-slate-850 border-y border-r border-amber-500/50 text-amber-300 shadow-2xl flex flex-col items-center gap-1 text-[11px] font-black backdrop-blur transition-transform active:scale-95 pointer-events-auto">
+    <button onclick="app.toggleLeftStatsDrawer()" class="absolute left-0 top-[40%] -translate-y-1/2 z-30 px-1.5 py-3 rounded-r-2xl bg-slate-900/90 hover:bg-[#151f30] border-y border-r border-amber-500/50 text-amber-300 shadow-2xl flex flex-col items-center gap-1 text-[11px] font-black backdrop-blur transition-transform active:scale-95 pointer-events-auto">
       <span>📊</span>
       <span class="text-[9px] text-slate-300 [writing-mode:vertical-lr] tracking-widest font-extrabold">实时战况</span>
     </button>
 
     <!-- 📜 右侧悬浮拉手：过往牌局复盘 -->
-    <button onclick="app.toggleRightHistoryDrawer()" class="absolute right-0 top-[40%] -translate-y-1/2 z-30 px-1.5 py-3 rounded-l-2xl bg-slate-900/90 hover:bg-slate-850 border-y border-l border-blue-500/50 text-blue-300 shadow-2xl flex flex-col items-center gap-1 text-[11px] font-black backdrop-blur transition-transform active:scale-95 pointer-events-auto">
+    <button onclick="app.toggleRightHistoryDrawer()" class="absolute right-0 top-[40%] -translate-y-1/2 z-30 px-1.5 py-3 rounded-l-2xl bg-slate-900/90 hover:bg-[#151f30] border-y border-l border-blue-500/50 text-blue-300 shadow-2xl flex flex-col items-center gap-1 text-[11px] font-black backdrop-blur transition-transform active:scale-95 pointer-events-auto">
       <span>📜</span>
       <span class="text-[9px] text-slate-300 [writing-mode:vertical-lr] tracking-widest font-extrabold">过往牌局</span>
     </button>
@@ -1777,13 +1777,38 @@
         const mins = this.matchExtraTimeMap[idx];
         document.getElementById('label-match-extra-time').innerText = `${mins}分钟`;
       }
-      onMatchBuyInLimitChange(idx) {
-        const limit = this.matchBuyInLimitMap[idx];
-        document.getElementById('label-match-buyin-limit').innerText = `${limit}`;
-      }
       submitMatchSettings() {
-        this.showToast('比赛设置已保存并生效！', 'success');
-        document.getElementById('modal-match-rules').classList.add('hidden');
+        const extraTimeIdx = parseInt(document.querySelector('#modal-match-rules input[oninput*="onMatchExtraTimeChange"]')?.value, 10) || 0;
+        const buyInLimitIdx = parseInt(document.querySelector('#modal-match-rules input[oninput*="onMatchBuyInLimitChange"]')?.value, 10) || 0;
+        const extraMinutes = this.matchExtraTimeMap[extraTimeIdx] || 0;
+        const buyInLimitStr = this.matchBuyInLimitMap[buyInLimitIdx] || '无限制';
+
+        const rules = {
+          parachute: document.getElementById('rule-parachute')?.checked ?? true,
+          ipgps: document.getElementById('rule-ipgps')?.checked ?? false,
+          bounty27: document.getElementById('rule-27show')?.checked ?? true,
+          buyInControl: document.getElementById('rule-buyin-control')?.checked ?? false,
+          delayReveal: document.getElementById('rule-delay-reveal')?.checked ?? false,
+          banEmulator: document.getElementById('rule-ban-emulator')?.checked ?? false
+        };
+
+        if (this.socket) {
+          this.socket.emit('update_match_settings', {
+            extraMinutes: extraMinutes,
+            buyInLimit: buyInLimitStr,
+            rules: rules
+          }, (res) => {
+            if (res && res.success) {
+              this.showToast('比赛设置已保存并全桌生效！', 'success');
+              document.getElementById('modal-match-rules').classList.add('hidden');
+            } else {
+              this.showToast(res ? res.msg : '保存设置失败', 'error');
+            }
+          });
+        } else {
+          this.showToast('比赛设置已保存并生效！', 'success');
+          document.getElementById('modal-match-rules').classList.add('hidden');
+        }
       }
       onRuleToggle(key, state) {
         const map = { parachute: '降落伞', ipgps: 'IP-GPS限制', '27show': '27操作秀', buyinControl: '带入控制', delayReveal: '延时看牌', banEmulator: '禁止模拟器' };
@@ -1952,7 +1977,7 @@
               <div class="flex items-start gap-1.5 min-w-[85px] shrink-0">
                 <div class="flex flex-col items-center">
                   <img src="${p.avatar}" class="w-8 h-8 rounded-lg border border-slate-700 object-cover bg-slate-900">
-                  <span class="mt-0.5 px-1 py-0.2 rounded text-[8px] leading-tight ${posBadgeClass}">${p.position || 'EP'}</span>
+                  <span class="mt-0.5 px-1 py-[1px] rounded text-[8px] leading-tight ${posBadgeClass}">${p.position || 'EP'}\</span>
                 </div>
                 <div class="space-y-0.5">
                   <div class="text-xs font-bold text-slate-200 truncate max-w-[65px] ${p.folded ? 'text-slate-500 line-through' : ''}">${p.name}</div>
@@ -1985,7 +2010,7 @@
                   <div class="flex flex-col items-center gap-0.5 shrink-0">
                     <div class="flex items-center -space-x-1">
                       ${hand.flopCards.map(c => `
-                        <div class="w-5.5 h-8.5 bg-white rounded-[3px] border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} select-none text-[8px] leading-none shadow">
+                        <div class="w-[22px] h-[34px] bg-white rounded-[3px] border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} select-none text-[8px] leading-none shadow">
                           <div>${c.label}</div>
                           <div class="text-[10px] text-center font-black">${c.symbol}</div>
                         </div>
@@ -1998,7 +2023,7 @@
                 <!-- 3. 转牌圈 (Turn) -->
                 ${hand.turnCard ? `
                   <div class="flex flex-col items-center gap-0.5 shrink-0">
-                    <div class="w-5.5 h-8.5 bg-white rounded-[3px] border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(hand.turnCard.suit)} select-none text-[8px] leading-none shadow">
+                    <div class="w-[22px] h-[34px] bg-white rounded-[3px] border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(hand.turnCard.suit)} select-none text-[8px] leading-none shadow">
                       <div>${hand.turnCard.label}</div>
                       <div class="text-[10px] text-center font-black">${hand.turnCard.symbol}</div>
                     </div>
@@ -2009,7 +2034,7 @@
                 <!-- 4. 河牌圈 (River) -->
                 ${hand.riverCard ? `
                   <div class="flex flex-col items-center gap-0.5 shrink-0">
-                    <div class="w-5.5 h-8.5 bg-white rounded-[3px] border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(hand.riverCard.suit)} select-none text-[8px] leading-none shadow">
+                    <div class="w-[22px] h-[34px] bg-white rounded-[3px] border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(hand.riverCard.suit)} select-none text-[8px] leading-none shadow">
                       <div>${hand.riverCard.label}</div>
                       <div class="text-[10px] text-center font-black">${hand.riverCard.symbol}</div>
                     </div>
@@ -2042,7 +2067,7 @@
         else if (last.code === 'BB') tagClass = 'replayer-tag-bb';
 
         return `
-          <div class="px-1 py-0.2 rounded text-[8px] font-mono-code font-black ${tagClass} leading-tight shadow-sm">
+          <div class="px-1 py-[1px] rounded text-[8px] font-mono-code font-black ${tagClass} leading-tight shadow-sm">
             ${last.code} ${last.amount > 0 ? last.amount : ''}
           </div>
         `;
@@ -2450,7 +2475,7 @@
             const c = state.communityCards[i];
             const col = this.getCardColorClass(c.suit);
             cHtml += `
-              <div class="w-11 h-15 md:w-13 md:h-18 bg-white rounded-xl shadow-xl border border-slate-300 flex flex-col justify-between p-1 font-black ${col} select-none">
+              <div class="w-11 h-16 md:w-14 md:h-20 bg-white rounded-xl shadow-xl border border-slate-300 flex flex-col justify-between p-1 font-black ${col} select-none">
                 <div class="text-[11px] md:text-xs leading-none font-mono-code font-black">${c.label}</div>
                 <div class="text-base md:text-xl text-center leading-none font-black">${c.symbol}</div>
                 <div class="text-[11px] md:text-xs leading-none text-right font-mono-code font-black">${c.label}</div>
@@ -2545,7 +2570,7 @@
                       
                       <!-- ⚡ All-in 职业级实时胜率 HUD 胶囊 -->
                       ${p.equity ? `
-                        <div class="px-1.5 py-0.2 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 text-[9px] font-black shadow-lg animate-pulse mb-0.5 tracking-tight flex items-center gap-0.5">
+                        <div class="px-1.5 py-[1px] rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 text-[9px] font-black shadow-lg animate-pulse mb-0.5 tracking-tight flex items-center gap-0.5">
                           <span>⚡</span><span>${p.equity}</span>
                         </div>
                       ` : ''}
@@ -2555,13 +2580,13 @@
                           const isCardIntentSelected = isSelf && p.showCardIntent && p.showCardIntent[cardIdx];
                           if (c.isHidden) {
                             return `
-                              <div class="w-8 h-11 md:w-9 md:h-13 bg-indigo-950 rounded-lg shadow-md border border-indigo-500/60 flex items-center justify-center text-sm text-indigo-300 font-black select-none">
+                              <div class="w-8 h-11 md:w-9 md:h-[52px] bg-indigo-950 rounded-lg shadow-md border border-indigo-500/60 flex items-center justify-center text-sm text-indigo-300 font-black select-none">
                                 ♠
                               </div>
                             `;
                           }
                           return `
-                            <div onclick="${isSelf ? `app.toggleShowCardSelection(${cardIdx})` : ''}" class="w-8 h-11 md:w-9 md:h-13 bg-white rounded-lg shadow-md border ${isCardIntentSelected ? 'card-selected-to-show' : (state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'border-amber-400 ring-2 ring-amber-400' : 'border-slate-300')} flex flex-col justify-between p-0.5 font-black ${this.getCardColorClass(c.suit)} select-none ${isSelf ? 'cursor-pointer hover:border-amber-400' : ''}">
+                            <div onclick="${isSelf ? `app.toggleShowCardSelection(${cardIdx})` : ''}" class="w-8 h-11 md:w-9 md:h-[52px] bg-white rounded-lg shadow-md border ${isCardIntentSelected ? 'card-selected-to-show' : (state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'border-amber-400 ring-2 ring-amber-400' : 'border-slate-300')} flex flex-col justify-between p-0.5 font-black ${this.getCardColorClass(c.suit)} select-none ${isSelf ? 'cursor-pointer hover:border-amber-400' : ''}">
                               <div class="text-[10px] md:text-[11px] leading-none font-mono-code font-black">${c.label}</div>
                               <div class="text-xs md:text-sm text-center leading-none font-black">${c.symbol}</div>
                               <div class="text-[10px] md:text-[11px] leading-none text-right font-mono-code font-black">${c.label}</div>
@@ -2570,7 +2595,7 @@
                         }).join('')}
                       </div>
                       ${p.handDescription ? `
-                        <div class="text-[9px] font-extrabold ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'text-amber-300 bg-amber-950/80 border-amber-500/50' : 'text-slate-200 bg-slate-900/90 border-slate-700/60'} px-2 py-0.2 rounded-full border mt-0.5 shadow select-none">
+                        <div class="text-[9px] font-extrabold ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'text-amber-300 bg-amber-950/80 border-amber-500/50' : 'text-slate-200 bg-slate-900/90 border-slate-700/60'} px-2 py-[1px] rounded-full border mt-0.5 shadow select-none">
                           ${p.handDescription}
                         </div>
                       ` : ''}
@@ -2581,7 +2606,7 @@
 
                 <!-- 下注记分牌数值 -->
                 ${p.currentRoundBet > 0 ? `
-                  <div class="mt-0.5 px-1.5 py-0.2 rounded-full bg-emerald-950/90 border border-emerald-500/40 text-[9px] font-mono-code font-bold text-emerald-300 shadow flex items-center gap-1">
+                  <div class="mt-0.5 px-1.5 py-[1px] rounded-full bg-emerald-950/90 border border-emerald-500/40 text-[9px] font-mono-code font-bold text-emerald-300 shadow flex items-center gap-1">
                     <span>🪙</span><span>${p.currentRoundBet}</span>
                   </div>
                 ` : ''}

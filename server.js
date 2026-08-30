@@ -1736,6 +1736,28 @@ io.on('connection', socket => {
     checkBotTurn(currentRoomId);
   });
 
+  socket.on('update_match_settings', (settings, callback) => {
+    if (!currentRoomId || !currentPlayerId) return callback && callback({ success: false, msg: '未在房间内' });
+    const room = rooms.get(currentRoomId);
+    if (!room) return callback && callback({ success: false, msg: '房间不存在' });
+    if (room.table.hostId !== currentPlayerId) return callback && callback({ success: false, msg: '只有房主可修改比赛设置' });
+
+    if (settings && settings.extraMinutes && settings.extraMinutes > 0 && room.table.expireTimestamp) {
+      room.table.expireTimestamp += settings.extraMinutes * 60 * 1000;
+      room.table.durationMinutes += settings.extraMinutes;
+      room.table.log(`⏰ 房主已为本场比赛加时 +${settings.extraMinutes} 分钟！`);
+    }
+
+    if (settings && settings.rules) {
+      room.table.customRules = { ...(room.table.customRules || {}), ...settings.rules };
+      room.table.log(`⚙️ 房主已更新比赛规则并即时生效！`);
+    }
+
+    saveRoomsToDisk();
+    broadcastTable(currentRoomId);
+    if (callback) callback({ success: true });
+  });
+
   socket.on('toggle_show_card_intent', ({ cardIndex, isSelected }, callback) => {
     if (!currentRoomId || !currentPlayerId) return;
     const room = rooms.get(currentRoomId);
