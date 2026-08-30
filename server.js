@@ -498,13 +498,35 @@ class PokerTable {
 
     if (this.seats[idx] !== null) return { success: false, msg: '该座位已被占用' };
 
-    const initialChips = player.chips || this.defaultBuyIn;
+    let realChips;
+    if (this.playerStatsMap[player.id]) {
+      // 玩家曾在此桌打过，严格继承并锁定本桌历史筹码！
+      realChips = this.playerStatsMap[player.id].chips;
+      this.playerStatsMap[player.id].name = player.name || this.playerStatsMap[player.id].name;
+      this.playerStatsMap[player.id].avatar = player.avatar || this.playerStatsMap[player.id].avatar;
+      this.log(`👋 玩家 [${player.name}] 重新回到 ${idx + 1} 号席位 (继承本桌真实战绩筹码: ${realChips} 🪙)`);
+    } else {
+      // 首次入座此房间，记录初始带入
+      realChips = player.chips || this.defaultBuyIn;
+      this.playerStatsMap[player.id] = {
+        id: player.id,
+        name: player.name,
+        avatar: player.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}`,
+        totalBuyIn: realChips,
+        played: 0,
+        wins: 0,
+        chips: realChips,
+        profit: 0
+      };
+      this.log(`玩家 [${player.name}] 首次加入本桌坐下 ${idx + 1} 号位 (初始带入: ${realChips} 🪙)`);
+    }
+
     const seatPlayer = {
       id: player.id,
       name: player.name,
       avatar: player.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}`,
       isBot: Boolean(player.isBot),
-      chips: initialChips,
+      chips: realChips,
       holeCards: [],
       currentRoundBet: 0,
       totalBet: 0,
@@ -521,24 +543,6 @@ class PokerTable {
     };
 
     this.seats[idx] = seatPlayer;
-
-    if (!this.playerStatsMap[player.id]) {
-      this.playerStatsMap[player.id] = {
-        id: player.id,
-        name: player.name,
-        avatar: seatPlayer.avatar,
-        totalBuyIn: initialChips,
-        played: 0,
-        wins: 0,
-        chips: initialChips,
-        profit: 0
-      };
-    } else {
-      this.playerStatsMap[player.id].avatar = seatPlayer.avatar;
-      this.playerStatsMap[player.id].name = seatPlayer.name;
-    }
-
-    this.log(`玩家 [${player.name}] 坐下 ${idx + 1} 号位 (带入记分牌 ${initialChips})`);
     this.notify();
     this.checkAutoStart();
     return { success: true, player: seatPlayer };
@@ -583,6 +587,9 @@ class PokerTable {
     const idx = this.seats.findIndex(s => s && s.id === playerId);
     if (idx === -1) return false;
     const p = this.seats[idx];
+    if (this.playerStatsMap[p.id]) {
+      this.playerStatsMap[p.id].chips = p.chips;
+    }
     this.log(`玩家 [${p.name}] 站起离座 (带离记分牌 ${p.chips})`);
     if (this.stage !== 'IDLE' && this.stage !== 'END_HAND' && !p.folded) {
       this.playerAction(playerId, 'fold');
