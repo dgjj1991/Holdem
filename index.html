@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>德州聚会 - 在线德州扑克 (Texas Hold'em)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Socket.io Client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #080c14;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .font-poker {
+      font-family: 'Cinzel', serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* 扑克桌毛呢质感 */
+    .poker-felt {
+      background: radial-gradient(circle at 50% 50%, #165b33 0%, #0f4024 65%, #0a2917 100%);
+      box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.85), 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+      border: 12px solid #2e1a0f;
+      outline: 3px solid #4a2b18;
+    }
+
+    /* 扑克牌阴影与过渡 */
+    .poker-card {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .poker-card:hover {
+      transform: translateY(-4px) scale(1.04);
+    }
+
+    /* 倒计时光环动画 */
+    @keyframes timer-glow {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9)); }
+      50% { filter: drop-shadow(0 0 16px rgba(239, 68, 68, 1)); }
+    }
+    .acting-pulse {
+      animation: timer-glow 1.4s infinite ease-in-out;
+    }
+
+    /* 自定义滑动条 */
+    input[type=range] {
+      accent-color: #f59e0b;
+    }
+    
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-slate-950 text-slate-100">
+
+  <!-- ================= 顶部导航状态栏 ================= -->
+  <header class="h-14 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center font-poker font-black text-slate-950 text-lg shadow-md shadow-amber-500/20">
+        ♠
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-wide flex items-center gap-2">
+          <span>德州聚会</span>
+          <span id="room-mode-badge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">常规桌</span>
+        </h1>
+        <div class="text-xs text-slate-400 flex items-center gap-2">
+          <span id="room-id-display">房间: 单人AI练习房</span>
+          <span class="text-slate-600">|</span>
+          <span id="room-blind-display">盲注: 10/20</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顶部操作区 -->
+    <div class="flex items-center gap-2">
+      <!-- 复制房间链接 -->
+      <button id="btn-share-room" onclick="app.copyRoomLink()" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
+        <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+        <span>邀请好友</span>
+      </button>
+
+      <!-- 快速添加 AI -->
+      <button id="btn-add-bot" onclick="app.addBot()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/50 text-xs font-medium transition">
+        <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+        <span>+AI机器人</span>
+      </button>
+
+      <!-- 战绩统计 -->
+      <button onclick="app.toggleStatsModal(true)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
+        <i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>战绩榜</span>
+      </button>
+
+      <!-- 手牌历史 -->
+      <button onclick="app.toggleHistoryModal(true)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
+        <i data-lucide="history" class="w-3.5 h-3.5 text-blue-400"></i>
+        <span>回顾</span>
+      </button>
+
+      <!-- 房间切换/返回大厅 -->
+      <button onclick="app.showLobbyModal()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="返回大厅/设置">
+        <i data-lucide="menu" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= 主对局区 (10人椭圆牌桌) ================= -->
+  <main class="flex-1 relative w-full h-[calc(100vh-140px)] flex items-center justify-center p-2 md:p-6 overflow-hidden">
+    
+    <!-- 德州牌桌本体 -->
+    <div id="poker-table" class="relative w-full max-w-5xl aspect-[16/10] md:aspect-[16/9] rounded-[110px] md:rounded-[200px] poker-felt flex flex-col items-center justify-center">
+      
+      <!-- 牌桌内圈装饰线与 LOGO -->
+      <div class="absolute inset-3 md:inset-6 rounded-[90px] md:rounded-[180px] border border-emerald-400/20 pointer-events-none flex flex-col items-center justify-center opacity-30">
+        <span class="font-poker text-xl md:text-3xl tracking-widest text-emerald-100/40 select-none">TEXAS HOLD'EM</span>
+        <span class="text-[10px] md:text-xs text-emerald-200/30 tracking-wider mt-0.5">NO LIMIT · PERMANENT ROOM</span>
+      </div>
+
+      <!-- 中央公共牌区与底池展示 -->
+      <div class="relative z-10 flex flex-col items-center gap-2 md:gap-3">
+        <!-- 底池金额 -->
+        <div class="flex items-center gap-2">
+          <div class="px-4 py-1 rounded-full bg-slate-950/85 border border-amber-500/40 backdrop-blur shadow-lg flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+            <span class="text-xs text-amber-200/90 font-medium">总底池</span>
+            <span id="table-pot" class="font-mono-code font-extrabold text-amber-400 text-base md:text-xl">0</span>
+            <span class="text-xs">🪙</span>
+          </div>
+        </div>
+
+        <!-- 5 张公共牌 (Flop, Turn, River) -->
+        <div id="community-cards" class="flex items-center gap-1.5 md:gap-2.5 min-h-[64px] md:min-h-[92px]">
+          <!-- 卡牌槽占位 -->
+          <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">1</div>
+          <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">2</div>
+          <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">3</div>
+          <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">4</div>
+          <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">5</div>
+        </div>
+
+        <!-- 牌局提示信息 / 赢家播报 -->
+        <div id="table-status-message" class="text-xs md:text-sm font-semibold text-emerald-200 bg-black/50 px-4 py-0.5 rounded-full border border-emerald-500/20 backdrop-blur shadow">
+          等待玩家就绪...
+        </div>
+      </div>
+
+      <!-- 10 个环形座位容器 -->
+      <div id="seats-container" class="absolute inset-0 pointer-events-none"></div>
+
+    </div>
+
+    <!-- 左下角：实时对局简讯 -->
+    <div class="absolute left-3 bottom-3 w-56 md:w-72 max-h-28 hidden sm:flex flex-col justify-end pointer-events-none z-20">
+      <div id="game-logs" class="space-y-1 text-[11px] font-mono-code text-slate-400 overflow-y-auto no-scrollbar">
+        <div class="text-emerald-400">系统: 数据已实时保存至本地缓存！</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= 底部操作控制面板 ================= -->
+  <footer class="h-20 bg-slate-900/95 border-t border-slate-800 px-3 md:px-8 flex items-center justify-between z-30 shrink-0">
+    
+    <!-- 玩家自身信息简览与重买 -->
+    <div class="flex items-center gap-2.5 min-w-[130px]">
+      <div class="relative">
+        <img id="my-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Me" class="w-9 h-9 rounded-full border-2 border-amber-400 bg-slate-800">
+        <span id="my-role-badge" class="hidden absolute -bottom-1 -right-1 px-1 text-[9px] font-bold rounded bg-amber-500 text-slate-950">D</span>
+      </div>
+      <div>
+        <div id="my-name" class="text-xs font-bold truncate max-w-[85px] md:max-w-[110px]">我的昵称</div>
+        <div class="flex items-center gap-1 text-xs text-amber-400 font-mono-code font-extrabold">
+          <span>🪙</span>
+          <span id="my-chips">1000</span>
+        </div>
+      </div>
+      <!-- 输光重买按钮 -->
+      <button id="btn-rebuy" onclick="app.rebuy()" class="hidden px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md animate-bounce">
+        +1000 补币
+      </button>
+    </div>
+
+    <!-- 核心行动操作区 (Fold, Check/Call, Raise, All-in) -->
+    <div id="action-controls" class="flex-1 flex flex-col md:flex-row items-center justify-end md:justify-center gap-2 max-w-2xl">
+      
+      <!-- 快捷加注倍数条 -->
+      <div id="quick-bet-bar" class="hidden flex items-center gap-1.5 w-full md:w-auto justify-center">
+        <button onclick="app.setBetPreset('min')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">最小</button>
+        <button onclick="app.setBetPreset('2.5bb')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">2.5BB</button>
+        <button onclick="app.setBetPreset('half_pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">1/2池</button>
+        <button onclick="app.setBetPreset('two_thirds_pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">2/3池</button>
+        <button onclick="app.setBetPreset('pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">满池</button>
+        <button onclick="app.setBetPreset('all_in')" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700/50 text-[11px] font-bold">All-in</button>
+      </div>
+
+      <!-- 行动主按钮组 -->
+      <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+        
+        <!-- 弃牌 (Fold) -->
+        <button id="btn-fold" onclick="app.performAction('fold')" disabled class="flex-1 md:flex-none px-4 md:px-5 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
+          弃牌 (Fold)
+        </button>
+
+        <!-- 过牌 / 跟注 (Check / Call) -->
+        <button id="btn-check-call" onclick="app.performAction('call')" disabled class="flex-1 md:flex-none px-4 md:px-6 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1">
+          <span id="check-call-label">过牌 (Check)</span>
+        </button>
+
+        <!-- 加注滑块与加注按钮 (Raise / Bet) -->
+        <div id="raise-box" class="flex items-center gap-1.5">
+          <div class="hidden sm:flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-xl border border-slate-700">
+            <input type="range" id="bet-slider" min="20" max="1000" step="10" value="20" oninput="app.onSliderChange(this.value)" class="w-16 md:w-24 cursor-pointer">
+            <span id="bet-slider-val" class="text-xs font-mono-code font-bold text-amber-400 w-9 text-right">40</span>
+          </div>
+
+          <button id="btn-raise" onclick="app.performAction('raise')" disabled class="px-3 md:px-5 py-2 rounded-xl bg-amber-600/30 hover:bg-amber-500 border border-amber-500/50 text-amber-300 hover:text-slate-950 font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
+            <span id="raise-label">加注</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 开始发牌按钮 -->
+    <div id="start-controls" class="flex items-center gap-2">
+      <button id="btn-start-game" onclick="app.startGame()" class="px-4 md:px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs md:text-sm shadow-md transition flex items-center gap-1.5">
+        <i data-lucide="play" class="w-3.5 h-3.5 fill-white"></i>
+        <span>开始发牌</span>
+      </button>
+    </div>
+
+  </footer>
+
+  <!-- ================= 弹窗 1：创建/加入房间大厅 ================= -->
+  <div id="modal-lobby" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
+      
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center font-poker text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/30">
+          ♠
+        </div>
+        <h2 class="text-xl font-extrabold tracking-wide text-white">德州聚会 · 房间大厅</h2>
+        <p class="text-xs text-slate-400">数据永久保存 · 支持反复进出 · 密码学真随机发牌</p>
+      </div>
+
+      <!-- 玩家昵称输入与历史筹码提示 -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-semibold text-slate-300">您的玩家昵称</label>
+          <span id="saved-chips-badge" class="text-[11px] text-amber-400 font-mono-code font-bold">本地已存: 1000 🪙</span>
+        </div>
+        <input type="text" id="input-player-name" value="扑克之王" maxlength="10" oninput="app.onNameChange(this.value)" class="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-amber-400 transition" placeholder="输入昵称">
+      </div>
+
+      <!-- 模式选项卡 -->
+      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-800/80 rounded-xl border border-slate-700/60">
+        <button id="tab-pve" onclick="app.switchLobbyTab('pve')" class="py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow transition">
+          永久练习房 (9 AI)
+        </button>
+        <button id="tab-pvp" onclick="app.switchLobbyTab('pvp')" class="py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+          好友多人联机
+        </button>
+      </div>
+
+      <!-- PVP 模式专属面板 -->
+      <div id="pvp-panel" class="hidden space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300">赛制类型</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 border border-slate-700 cursor-pointer hover:border-slate-500">
+              <input type="radio" name="game-mode-radio" value="CASH" checked class="accent-amber-400">
+              <div class="text-left">
+                <div class="text-xs font-bold text-slate-200">常规桌 (Cash)</div>
+                <div class="text-[10px] text-slate-400">1000币自由补买</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 border border-slate-700 cursor-pointer hover:border-slate-500">
+              <input type="radio" name="game-mode-radio" value="TOURNAMENT" class="accent-amber-400">
+              <div class="text-left">
+                <div class="text-xs font-bold text-slate-200">锦标赛 (SNG)</div>
+                <div class="text-[10px] text-slate-400">定时升盲淘汰制</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <button onclick="app.createOnlineRoom()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition">
+            创建专属私人房间
+          </button>
+          
+          <div class="flex items-center gap-2">
+            <input type="text" id="input-room-code" placeholder="输入 6 位房间码" maxlength="6" class="flex-1 uppercase font-mono-code px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
+            <button onclick="app.joinOnlineRoom()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">
+              加入
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PVE 模式专属面板 -->
+      <div id="pve-panel" class="space-y-3">
+        <p class="text-xs text-slate-400 bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 leading-relaxed">
+          💡 **永久房间机制**：该房间支持随时退出、关闭浏览器或刷新页面。重新进入时将**无缝恢复您的筹码与战绩**，无需重新开档！
+        </p>
+        
+        <div class="space-y-2">
+          <button id="btn-enter-pve" onclick="app.startOfflinePve(false)" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+            <i data-lucide="play-circle" class="w-4 h-4"></i>
+            <span id="btn-enter-pve-text">进入永久练习房间</span>
+          </button>
+
+          <button onclick="app.resetPveRoom()" class="w-full py-2 text-center text-xs text-rose-400/80 hover:text-rose-300 transition">
+            重置房间并恢复 1000 初始筹码
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 2：战绩排行榜 ================= -->
+  <div id="modal-stats" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-base font-bold text-white">本场累计战绩与输赢榜</h3>
+        </div>
+        <button onclick="app.toggleStatsModal(false)" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto no-scrollbar">
+        <table class="w-full text-left text-xs">
+          <thead class="text-slate-400 border-b border-slate-800 font-medium">
+            <tr>
+              <th class="py-2">排名 / 玩家</th>
+              <th class="py-2 text-center">总局数</th>
+              <th class="py-2 text-center">胜局数</th>
+              <th class="py-2 text-center">胜率</th>
+              <th class="py-2 text-right">当前筹码</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-tbody" class="divide-y divide-slate-800/60 font-mono-code"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 3：手牌历史回顾 ================= -->
+  <div id="modal-history" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="history" class="w-5 h-5 text-blue-400"></i>
+          <h3 class="text-base font-bold text-white">最近对局历史回顾</h3>
+        </div>
+        <button onclick="app.toggleHistoryModal(false)" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="history-container" class="flex-1 overflow-y-auto space-y-3 no-scrollbar text-xs"></div>
+    </div>
+  </div>
+
+  <!-- ================= 核心持久化 JavaScript 引擎 ================= -->
+  <script>
+    // ================= 1. 扑克模型与密码学安全真随机发牌 =================
+    const SUITS = ['s', 'h', 'd', 'c'];
+    const SUIT_SYMBOLS = { s: '♠', h: '♥', d: '♦', c: '♣' };
+    const RANKS = [
+      { value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' },
+      { value: 5, label: '5' }, { value: 6, label: '6' }, { value: 7, label: '7' },
+      { value: 8, label: '8' }, { value: 9, label: '9' }, { value: 10, label: '10' },
+      { value: 11, label: 'J' }, { value: 12, label: 'Q' }, { value: 13, label: 'K' },
+      { value: 14, label: 'A' }
+    ];
+
+    class Card {
+      constructor(suit, rank, label) {
+        this.suit = suit;
+        this.rank = rank;
+        this.label = label;
+        this.symbol = SUIT_SYMBOLS[suit];
+        this.id = `${label}${suit}`;
+      }
+      toString() { return `${this.label}${this.symbol}`; }
+      toJSON() {
+        return { id: this.id, suit: this.suit, rank: this.rank, label: this.label, symbol: this.symbol };
+      }
+    }
+
+    class SafeDeck {
+      constructor() {
+        this.cards = [];
+        this.reset();
+      }
+      reset() {
+        this.cards = [];
+        for (const s of SUITS) {
+          for (const r of RANKS) {
+            this.cards.push(new Card(s, r.value, r.label));
+          }
+        }
+      }
+      shuffle() {
+        const array = new Uint32Array(this.cards.length);
+        if (window.crypto && window.crypto.getRandomValues) {
+          window.crypto.getRandomValues(array);
+        } else {
+          for (let k = 0; k < array.length; k++) array[k] = Math.floor(Math.random() * 1000000);
+        }
+
+        for (let i = this.cards.length - 1; i > 0; i--) {
+          const j = array[i] % (i + 1);
+          const temp = this.cards[i];
+          this.cards[i] = this.cards[j];
+          this.cards[j] = temp;
+        }
+      }
+      burn() {
+        if (this.cards.length > 0) return this.cards.pop();
+        return null;
+      }
+      deal(count = 1) {
+        const res = [];
+        for (let i = 0; i < count; i++) {
+          if (this.cards.length > 0) res.push(this.cards.pop());
+        }
+        return res;
+      }
+    }
+
+    // ================= 2. 7选5 手牌评级算法 =================
+    const HAND_TYPES = {
+      ROYAL_FLUSH: { rank: 10, name: '皇家同花顺' },
+      STRAIGHT_FLUSH: { rank: 9, name: '同花顺' },
+      FOUR_OF_A_KIND: { rank: 8, name: '四条' },
+      FULL_HOUSE: { rank: 7, name: '葫芦' },
+      FLUSH: { rank: 6, name: '同花' },
+      STRAIGHT: { rank: 5, name: '顺子' },
+      THREE_OF_A_KIND: { rank: 4, name: '三条' },
+      TWO_PAIR: { rank: 3, name: '两对' },
+      ONE_PAIR: { rank: 2, name: '一对' },
+      HIGH_CARD: { rank: 1, name: '高牌' }
+    };
+
+    const RANK_NAMES = {
+      14: 'A', 13: 'K', 12: 'Q', 11: 'J', 10: '10',
+      9: '9', 8: '8', 7: '7', 6: '6', 5: '5', 4: '4', 3: '3', 2: '2'
+    };
+
+    function evaluate5Cards(cards) {
+      const sorted = [...cards].sort((a, b) => b.rank - a.rank);
+      const ranks = sorted.map(c => c.rank);
+      const suits = sorted.map(c => c.suit);
+      const isFlush = suits.every(s => s === suits[0]);
+
+      let isStraight = false;
+      let straightHigh = 0;
+
+      if (ranks[0] - ranks[1] === 1 && ranks[1] - ranks[2] === 1 && ranks[2] - ranks[3] === 1 && ranks[3] - ranks[4] === 1) {
+        isStraight = true;
+        straightHigh = ranks[0];
+      } else if (ranks[0] === 14 && ranks[1] === 5 && ranks[2] === 4 && ranks[3] === 3 && ranks[4] === 2) {
+        isStraight = true;
+        straightHigh = 5;
+      }
+
+      const countMap = {};
+      for (const r of ranks) countMap[r] = (countMap[r] || 0) + 1;
+
+      const counts = Object.entries(countMap)
+        .map(([rankStr, count]) => ({ rank: parseInt(rankStr, 10), count }))
+        .sort((a, b) => b.count !== a.count ? b.count - a.count : b.rank - a.rank);
+
+      if (isFlush && isStraight) {
+        if (straightHigh === 14) return { type: HAND_TYPES.ROYAL_FLUSH, score: [10, 14], description: '皇家同花顺' };
+        return { type: HAND_TYPES.STRAIGHT_FLUSH, score: [9, straightHigh], description: `同花顺 (${RANK_NAMES[straightHigh]}高)` };
+      }
+      if (counts[0].count === 4) {
+        return { type: HAND_TYPES.FOUR_OF_A_KIND, score: [8, counts[0].rank, counts[1].rank], description: `四条 (${RANK_NAMES[counts[0].rank]})` };
+      }
+      if (counts[0].count === 3 && counts[1].count === 2) {
+        return { type: HAND_TYPES.FULL_HOUSE, score: [7, counts[0].rank, counts[1].rank], description: `葫芦 (${RANK_NAMES[counts[0].rank]}带${RANK_NAMES[counts[1].rank]})` };
+      }
+      if (isFlush) {
+        return { type: HAND_TYPES.FLUSH, score: [6, ...ranks], description: `同花 (${RANK_NAMES[ranks[0]]}高)` };
+      }
+      if (isStraight) {
+        return { type: HAND_TYPES.STRAIGHT, score: [5, straightHigh], description: `顺子 (${RANK_NAMES[straightHigh]}高)` };
+      }
+      if (counts[0].count === 3) {
+        return { type: HAND_TYPES.THREE_OF_A_KIND, score: [4, counts[0].rank, counts[1].rank, counts[2].rank], description: `三条 (${RANK_NAMES[counts[0].rank]})` };
+      }
+      if (counts[0].count === 2 && counts[1].count === 2) {
+        const highPair = Math.max(counts[0].rank, counts[1].rank);
+        const lowPair = Math.min(counts[0].rank, counts[1].rank);
+        return { type: HAND_TYPES.TWO_PAIR, score: [3, highPair, lowPair, counts[2].rank], description: `两对 (${RANK_NAMES[highPair]}和${RANK_NAMES[lowPair]})` };
+      }
+      if (counts[0].count === 2) {
+        return { type: HAND_TYPES.ONE_PAIR, score: [2, counts[0].rank, counts[1].rank, counts[2].rank, counts[3].rank], description: `一对 (${RANK_NAMES[counts[0].rank]})` };
+      }
+      return { type: HAND_TYPES.HIGH_CARD, score: [1, ...ranks], description: `高牌 (${RANK_NAMES[ranks[0]]}高)` };
+    }
+
+    function compareScores(scoreA, scoreB) {
+      const len = Math.max(scoreA.length, scoreB.length);
+      for (let i = 0; i < len; i++) {
+        const a = scoreA[i] || 0;
+        const b = scoreB[i] || 0;
+        if (a > b) return 1;
+        if (a < b) return -1;
+      }
+      return 0;
+    }
+
+    function get5Combinations(cards) {
+      const res = [];
+      function fn(start, chosen) {
+        if (chosen.length === 5) { res.push([...chosen]); return; }
+        for (let i = start; i < cards.length; i++) {
+          chosen.push(cards[i]);
+          fn(i + 1, chosen);
+          chosen.pop();
+        }
+      }
+      fn(0, []);
+      return res;
+    }
+
+    function evaluateHand(cards) {
+      if (!cards || cards.length < 5) return { type: HAND_TYPES.HIGH_CARD, score: [0], description: '高牌' };
+      const combos = get5Combinations(cards);
+      let best = null;
+      for (const c of combos) {
+        const cur = evaluate5Cards(c);
+        if (!best || compareScores(cur.score, best.score) > 0) best = cur;
+      }
+      return best;
+    }
+
+    // ================= 3. 多边池计算器 =================
+    class PotManager {
+      static calculatePots(contributors) {
+        const active = contributors.filter(p => p.totalBet > 0).map(p => ({ ...p }));
+        if (active.length === 0) return [];
+        const levels = Array.from(new Set(active.map(p => p.totalBet))).sort((a, b) => a - b);
+        const pots = [];
+        let processed = 0;
+        for (const lvl of levels) {
+          if (lvl <= processed) continue;
+          const inc = lvl - processed;
+          let amt = 0;
+          const elig = [];
+          for (const p of active) {
+            if (p.totalBet >= lvl) {
+              amt += inc;
+              if (!p.folded) elig.push(p.id);
+            }
+          }
+          if (amt > 0 && elig.length > 0) pots.push({ amount: amt, eligiblePlayerIds: elig });
+          processed = lvl;
+        }
+        return pots;
+      }
+
+      static distributePots(players) {
+        const pots = this.calculatePots(players);
+        const payouts = [];
+        const pMap = new Map();
+        players.forEach(p => pMap.set(p.id, p));
+
+        for (let i = 0; i < pots.length; i++) {
+          const pot = pots[i];
+          const eligible = pot.eligiblePlayerIds.map(id => pMap.get(id)).filter(Boolean);
+          if (eligible.length === 0) continue;
+          if (eligible.length === 1) {
+            payouts.push({ playerId: eligible[0].id, amount: pot.amount });
+            continue;
+          }
+
+          let best = [eligible[0]];
+          for (let j = 1; j < eligible.length; j++) {
+            const cmp = compareScores(eligible[j].bestHand.score, best[0].bestHand.score);
+            if (cmp > 0) best = [eligible[j]];
+            else if (cmp === 0) best.push(eligible[j]);
+          }
+
+          const share = Math.floor(pot.amount / best.length);
+          let rem = pot.amount % best.length;
+          for (const w of best) {
+            let winAmt = share + (rem > 0 ? 1 : 0);
+            if (rem > 0) rem--;
+            payouts.push({ playerId: w.id, amount: winAmt });
+          }
+        }
+
+        const summary = {};
+        payouts.forEach(p => {
+          if (!summary[p.playerId]) summary[p.playerId] = { playerId: p.playerId, totalWon: 0 };
+          summary[p.playerId].totalWon += p.amount;
+        });
+        return Object.values(summary);
+      }
+    }
+
+    // ================= 4. AI 机器人策略 =================
+    const BOT_NAMES = [
+      '周星星·赌圣', '高进·赌神', '陈刀仔', '老谋深算·老王',
+      '狂徒·杰克', '数学家·冯诺', '锦鲤·小美', '稳健大师·强哥',
+      'AlphaPoker', '萌新小白'
+    ];
+
+    class PokerBot {
+      static decide(table, bot) {
+        const toCall = table.currentBet - bot.currentRoundBet;
+        const canCheck = toCall === 0;
+        const chips = bot.chips;
+
+        if (table.stage === 'PREFLOP') {
+          const [c1, c2] = bot.holeCards;
+          const r1 = Math.max(c1.rank, c2.rank);
+          const r2 = Math.min(c1.rank, c2.rank);
+          const isPair = r1 === r2;
+          const isSuited = c1.suit === c2.suit;
+
+          let score = (r1 + r2) * 2;
+          if (isPair) score += 30;
+          if (isSuited) score += 10;
+
+          if (canCheck) {
+            if (score >= 45 && Math.random() < 0.6) return { action: 'raise', amount: table.bigBlind * 3 };
+            return { action: 'check', amount: 0 };
+          }
+          if (score >= 50) {
+            if (Math.random() < 0.3) return { action: 'raise', amount: table.currentBet * 2 + table.minRaise };
+            return { action: 'call', amount: toCall };
+          } else if (score >= 32 && toCall <= table.bigBlind * 2) {
+            return { action: 'call', amount: toCall };
+          }
+          return { action: 'fold', amount: 0 };
+        }
+
+        // 翻牌后
+        const allCards = [...bot.holeCards, ...table.communityCards];
+        const evalRes = evaluateHand(allCards);
+        const rank = evalRes.type.rank;
+
+        if (rank >= 4) {
+          if (canCheck) return Math.random() < 0.3 ? { action: 'check', amount: 0 } : { action: 'bet', amount: Math.floor(table.pot * 0.6) };
+          return Math.random() < 0.4 ? { action: 'raise', amount: table.currentBet * 2 + table.minRaise } : { action: 'call', amount: toCall };
+        }
+        if (rank >= 2) {
+          if (canCheck) return { action: 'check', amount: 0 };
+          if (toCall <= chips * 0.25) return { action: 'call', amount: toCall };
+          return { action: 'fold', amount: 0 };
+        }
+        if (canCheck) return { action: 'check', amount: 0 };
+        return { action: 'fold', amount: 0 };
+      }
+    }
+
+    // ================= 5. 持久化牌桌状态机 (支持自动保存与恢复) =================
+    class PersistentPokerTable {
+      constructor({ id, maxSeats = 10, smallBlind = 10, bigBlind = 20, defaultBuyIn = 1000 }) {
+        this.id = id;
+        this.maxSeats = maxSeats;
+        this.smallBlind = smallBlind;
+        this.bigBlind = bigBlind;
+        this.defaultBuyIn = defaultBuyIn;
+        this.seats = new Array(maxSeats).fill(null);
+        this.deck = new SafeDeck();
+        this.communityCards = [];
+        this.stage = 'IDLE';
+        this.dealerSeat = -1;
+        this.smallBlindSeat = -1;
+        this.bigBlindSeat = -1;
+        this.currentActorSeat = -1;
+        this.currentBet = 0;
+        this.minRaise = bigBlind;
+        this.pot = 0;
+        this.handCount = 0;
+        this.handWinners = [];
+        this.actionTimeRemaining = 15;
+        this.timerInterval = null;
+        this.onStateChange = null;
+        this.onLog = null;
+
+        // 历史战绩统计记录
+        this.playerStatsMap = {};
+        this.handHistoryList = [];
+      }
+
+      log(msg) { if (this.onLog) this.onLog(msg); }
+      notify() { 
+        if (this.onStateChange) this.onStateChange(this);
+        this.saveToStorage();
+      }
+
+      // 持久化到 localStorage
+      saveToStorage() {
+        try {
+          const stateData = {
+            id: this.id,
+            handCount: this.handCount,
+            playerStatsMap: this.playerStatsMap,
+            handHistoryList: this.handHistoryList,
+            seats: this.seats.map(s => s ? {
+              id: s.id,
+              name: s.name,
+              avatar: s.avatar,
+              isBot: s.isBot,
+              chips: s.chips
+            } : null)
+          };
+          localStorage.setItem(`poker_room_save_${this.id}`, JSON.stringify(stateData));
+        } catch (e) {}
+      }
+
+      // 从 localStorage 恢复
+      loadFromStorage() {
+        try {
+          const raw = localStorage.getItem(`poker_room_save_${this.id}`);
+          if (!raw) return false;
+          const data = JSON.parse(raw);
+          this.handCount = data.handCount || 0;
+          this.playerStatsMap = data.playerStatsMap || {};
+          this.handHistoryList = data.handHistoryList || [];
+
+          if (data.seats && Array.isArray(data.seats)) {
+            data.seats.forEach((saved, idx) => {
+              if (saved) {
+                this.seats[idx] = {
+                  ...saved,
+                  holeCards: [],
+                  currentRoundBet: 0,
+                  totalBet: 0,
+                  folded: false,
+                  allIn: false,
+                  hasActed: false,
+                  lastAction: null,
+                  showCards: false
+                };
+              }
+            });
+          }
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      sitDown(idx, player) {
+        if (idx < 0 || idx >= this.maxSeats) return false;
+        
+        // 查找历史筹码
+        let chips = player.chips !== undefined ? player.chips : this.defaultBuyIn;
+        if (this.seats[idx] && this.seats[idx].id === player.id) {
+          chips = this.seats[idx].chips;
+        }
+
+        this.seats[idx] = {
+          id: player.id,
+          name: player.name,
+          avatar: player.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.name}`,
+          isBot: Boolean(player.isBot),
+          chips: chips > 0 ? chips : this.defaultBuyIn,
+          holeCards: [],
+          currentRoundBet: 0,
+          totalBet: 0,
+          folded: false,
+          allIn: false,
+          hasActed: false,
+          lastAction: null,
+          showCards: false
+        };
+
+        if (!this.playerStatsMap[player.id]) {
+          this.playerStatsMap[player.id] = {
+            id: player.id,
+            name: player.name,
+            played: 0,
+            wins: 0,
+            chips: this.seats[idx].chips
+          };
+        }
+
+        this.log(`玩家 [${player.name}] 进房就坐 (${this.seats[idx].chips} 🪙)`);
+        this.notify();
+        return true;
+      }
+
+      rebuy(playerId, amt = 1000) {
+        const p = this.seats.find(s => s && s.id === playerId);
+        if (p && p.chips === 0) {
+          p.chips += amt;
+          this.log(`玩家 [${p.name}] 重新带入了 ${amt} 筹码`);
+          this.notify();
+        }
+      }
+
+      getActiveSeats() {
+        return this.seats.map((p, i) => ({ p, i })).filter(item => item.p !== null && item.p.chips > 0);
+      }
+      getInHandSeats() {
+        return this.seats.map((p, i) => ({ p, i })).filter(item => item.p !== null && !item.p.folded && item.p.holeCards.length > 0);
+      }
+
+      startNewHand() {
+        clearInterval(this.timerInterval);
+        const active = this.getActiveSeats();
+        if (active.length < 2) {
+          this.stage = 'IDLE';
+          this.log('等待至少 2 名玩家就绪...');
+          this.notify();
+          return;
+        }
+
+        this.handCount++;
+        this.stage = 'PREFLOP';
+        this.communityCards = [];
+        this.handWinners = [];
+        this.pot = 0;
+        this.deck.reset();
+        this.deck.shuffle();
+
+        this.seats.forEach(p => {
+          if (p) {
+            p.holeCards = [];
+            p.currentRoundBet = 0;
+            p.totalBet = 0;
+            p.folded = p.chips <= 0;
+            p.allIn = false;
+            p.hasActed = false;
+            p.lastAction = null;
+            p.showCards = false;
+            
+            // 统计局数
+            if (this.playerStatsMap[p.id]) this.playerStatsMap[p.id].played++;
+          }
+        });
+
+        this.rotateDealer();
+        this.postBlinds();
+
+        // 发底牌 2 张
+        for (let r = 0; r < 2; r++) {
+          for (const item of this.getActiveSeats()) {
+            if (!item.p.folded) item.p.holeCards.push(this.deck.deal(1)[0]);
+          }
+        }
+
+        this.log(`--- 第 ${this.handCount} 局开始 [盲注 ${this.smallBlind}/${this.bigBlind}] ---`);
+        this.setInitialActorPreflop();
+        this.notify();
+        this.startTimer();
+      }
+
+      rotateDealer() {
+        const active = this.getActiveSeats();
+        if (this.dealerSeat === -1) {
+          this.dealerSeat = active[0].i;
+        } else {
+          let next = (this.dealerSeat + 1) % this.maxSeats;
+          while (!this.seats[next] || this.seats[next].chips <= 0) {
+            next = (next + 1) % this.maxSeats;
+          }
+          this.dealerSeat = next;
+        }
+      }
+
+      getNextSeat(from) {
+        let n = (from + 1) % this.maxSeats;
+        while (!this.seats[n] || this.seats[n].folded || this.seats[n].chips <= 0) {
+          n = (n + 1) % this.maxSeats;
+        }
+        return n;
+      }
+
+      postBlinds() {
+        const active = this.getActiveSeats();
+        if (active.length === 2) {
+          this.smallBlindSeat = this.dealerSeat;
+          this.bigBlindSeat = active.find(it => it.i !== this.dealerSeat).i;
+        } else {
+          this.smallBlindSeat = this.getNextSeat(this.dealerSeat);
+          this.bigBlindSeat = this.getNextSeat(this.smallBlindSeat);
+        }
+
+        const sb = this.seats[this.smallBlindSeat];
+        const bb = this.seats[this.bigBlindSeat];
+
+        const sbAmt = Math.min(this.smallBlind, sb.chips);
+        sb.chips -= sbAmt; sb.currentRoundBet = sbAmt; sb.totalBet = sbAmt;
+        if (sb.chips === 0) sb.allIn = true;
+        sb.lastAction = `小盲 ${sbAmt}`;
+
+        const bbAmt = Math.min(this.bigBlind, bb.chips);
+        bb.chips -= bbAmt; bb.currentRoundBet = bbAmt; bb.totalBet = bbAmt;
+        if (bb.chips === 0) bb.allIn = true;
+        bb.lastAction = `大盲 ${bbAmt}`;
+
+        this.pot = sbAmt + bbAmt;
+        this.currentBet = this.bigBlind;
+        this.minRaise = this.bigBlind;
+      }
+
+      setInitialActorPreflop() {
+        const active = this.getActiveSeats();
+        this.currentActorSeat = active.length === 2 ? this.dealerSeat : this.getNextSeat(this.bigBlindSeat);
+      }
+
+      startTimer() {
+        clearInterval(this.timerInterval);
+        this.actionTimeRemaining = 15;
+        this.timerInterval = setInterval(() => {
+          this.actionTimeRemaining--;
+          this.notify();
+          if (this.actionTimeRemaining <= 0) {
+            clearInterval(this.timerInterval);
+            this.handleTimeout();
+          }
+        }, 1000);
+      }
+
+      handleTimeout() {
+        if (this.currentActorSeat === -1) return;
+        const p = this.seats[this.currentActorSeat];
+        if (!p) return;
+        if (p.currentRoundBet === this.currentBet) {
+          this.playerAction(p.id, 'check');
+        } else {
+          this.playerAction(p.id, 'fold');
+        }
+      }
+
+      playerAction(playerId, act, amount = 0) {
+        if (this.currentActorSeat === -1) return;
+        const p = this.seats[this.currentActorSeat];
+        if (!p || p.id !== playerId) return;
+
+        const toCall = this.currentBet - p.currentRoundBet;
+
+        if (act === 'fold') {
+          p.folded = true;
+          p.lastAction = '弃牌';
+          this.log(`玩家 [${p.name}] 弃牌`);
+        } else if (act === 'check') {
+          if (toCall > 0) return this.playerAction(playerId, 'fold');
+          p.lastAction = '过牌';
+          this.log(`玩家 [${p.name}] 过牌`);
+        } else if (act === 'call') {
+          const callAmt = Math.min(toCall, p.chips);
+          p.chips -= callAmt; p.currentRoundBet += callAmt; p.totalBet += callAmt;
+          this.pot += callAmt;
+          if (p.chips === 0) p.allIn = true;
+          p.lastAction = p.allIn ? `全下跟注 ${callAmt}` : `跟注 ${callAmt}`;
+          this.log(`玩家 [${p.name}] ${p.lastAction}`);
+        } else if (act === 'raise' || act === 'bet') {
+          const target = Math.max(parseInt(amount, 10), this.currentBet + this.minRaise);
+          const need = target - p.currentRoundBet;
+          if (need >= p.chips) return this.playerAction(playerId, 'allIn');
+
+          p.chips -= need; p.currentRoundBet = target; p.totalBet += need;
+          this.pot += need;
+          this.minRaise = target - this.currentBet;
+          this.currentBet = target;
+          p.lastAction = `加注至 ${target}`;
+          this.log(`玩家 [${p.name}] 加注至 ${target}`);
+        } else if (act === 'allIn') {
+          const allChips = p.chips;
+          const target = p.currentRoundBet + allChips;
+          p.chips = 0; p.currentRoundBet = target; p.totalBet += allChips;
+          this.pot += allChips;
+          p.allIn = true;
+          if (target > this.currentBet) {
+            this.minRaise = Math.max(this.minRaise, target - this.currentBet);
+            this.currentBet = target;
+          }
+          p.lastAction = `All-in 全下 (${allChips})`;
+          this.log(`🔥 玩家 [${p.name}] All-in 全下 ${allChips}！`);
+        }
+
+        p.hasActed = true;
+        this.advance();
+      }
+
+      advance() {
+        clearInterval(this.timerInterval);
+        const inHand = this.getInHandSeats();
+        if (inHand.length === 1) {
+          this.settleSurvivor(inHand[0].p);
+          return;
+        }
+
+        const betting = inHand.filter(it => !it.p.allIn);
+        const allActed = inHand.every(it => it.p.hasActed || it.p.allIn);
+        const allEqual = inHand.every(it => it.p.allIn || it.p.currentRoundBet === this.currentBet);
+
+        if ((betting.length <= 1 && allEqual) || (allActed && allEqual)) {
+          this.nextStage();
+        } else {
+          this.currentActorSeat = this.findNextActor(this.currentActorSeat);
+          this.notify();
+          this.startTimer();
+        }
+      }
+
+      findNextActor(from) {
+        for (let i = 1; i <= this.maxSeats; i++) {
+          const s = (from + i) % this.maxSeats;
+          const p = this.seats[s];
+          if (p && !p.folded && !p.allIn && (!p.hasActed || p.currentRoundBet < this.currentBet)) {
+            return s;
+          }
+        }
+        return -1;
+      }
+
+      nextStage() {
+        this.seats.forEach(p => { if (p) { p.currentRoundBet = 0; p.hasActed = false; } });
+        this.currentBet = 0;
+        this.minRaise = this.bigBlind;
+
+        const betting = this.getInHandSeats().filter(it => !it.p.allIn);
+        const autoRun = betting.length <= 1;
+
+        if (this.stage === 'PREFLOP') {
+          this.deck.burn();
+          this.communityCards.push(...this.deck.deal(3));
+          this.stage = 'FLOP';
+          this.log(`【发翻牌】${this.communityCards.map(c => c.toString()).join(' ')}`);
+        } else if (this.stage === 'FLOP') {
+          this.deck.burn();
+          this.communityCards.push(...this.deck.deal(1));
+          this.stage = 'TURN';
+          this.log(`【发转牌】${this.communityCards.map(c => c.toString()).join(' ')}`);
+        } else if (this.stage === 'TURN') {
+          this.deck.burn();
+          this.communityCards.push(...this.deck.deal(1));
+          this.stage = 'RIVER';
+          this.log(`【发河牌】${this.communityCards.map(c => c.toString()).join(' ')}`);
+        } else if (this.stage === 'RIVER') {
+          this.settleShowdown();
+          return;
+        }
+
+        if (autoRun) {
+          this.notify();
+          setTimeout(() => this.nextStage(), 1200);
+        } else {
+          this.currentActorSeat = this.getNextSeat(this.dealerSeat);
+          this.notify();
+          this.startTimer();
+        }
+      }
+
+      settleSurvivor(winner) {
+        this.stage = 'END_HAND';
+        winner.chips += this.pot;
+        this.handWinners = [{ playerId: winner.id, name: winner.name, totalWon: this.pot, description: '对手全部弃牌' }];
+        this.recordHandResult();
+        this.log(`🏆 玩家 [${winner.name}] 独揽底池 ${this.pot} 筹码`);
+        this.finishHand();
+      }
+
+      settleShowdown() {
+        this.stage = 'SHOWDOWN';
+        const inHand = this.getInHandSeats();
+
+        const evaluated = inHand.map(it => {
+          const all = [...it.p.holeCards, ...this.communityCards];
+          const b = evaluateHand(all);
+          it.p.bestHand = b;
+          it.p.showCards = true;
+          return { id: it.p.id, name: it.p.name, totalBet: it.p.totalBet, folded: it.p.folded, bestHand: b };
+        });
+
+        const payouts = PotManager.distributePots(evaluated);
+        this.handWinners = payouts.map(w => {
+          const p = this.seats.find(s => s && s.id === w.playerId);
+          if (p) p.chips += w.totalWon;
+          const info = evaluated.find(e => e.id === w.playerId);
+          return { playerId: w.playerId, name: info ? info.name : '未知', totalWon: w.totalWon, description: info ? info.bestHand.description : '' };
+        });
+
+        this.recordHandResult();
+        this.handWinners.forEach(w => this.log(`🏆 [${w.name}] 赢得 ${w.totalWon} 筹码 (${w.description})`));
+        this.stage = 'END_HAND';
+        this.finishHand();
+      }
+
+      recordHandResult() {
+        this.handWinners.forEach(w => {
+          if (this.playerStatsMap[w.playerId]) this.playerStatsMap[w.playerId].wins++;
+        });
+
+        this.seats.forEach(p => {
+          if (p && this.playerStatsMap[p.id]) {
+            this.playerStatsMap[p.id].chips = p.chips;
+          }
+        });
+
+        this.handHistoryList.unshift({
+          handNumber: this.handCount,
+          pot: this.pot,
+          communityCards: this.communityCards.map(c => c.toString()),
+          winners: this.handWinners
+        });
+        if (this.handHistoryList.length > 30) this.handHistoryList.pop();
+      }
+
+      finishHand() {
+        clearInterval(this.timerInterval);
+        this.notify();
+        setTimeout(() => {
+          if (this.getActiveSeats().length >= 2) this.startNewHand();
+          else { this.stage = 'IDLE'; this.notify(); }
+        }, 4000);
+      }
+
+      getPublicState(viewerId) {
+        return {
+          id: this.id,
+          stage: this.stage,
+          smallBlind: this.smallBlind,
+          bigBlind: this.bigBlind,
+          pot: this.pot,
+          currentBet: this.currentBet,
+          minRaise: this.minRaise,
+          dealerSeat: this.dealerSeat,
+          smallBlindSeat: this.smallBlindSeat,
+          bigBlindSeat: this.bigBlindSeat,
+          currentActorSeat: this.currentActorSeat,
+          actionTimeRemaining: this.actionTimeRemaining,
+          handWinners: this.handWinners,
+          handCount: this.handCount,
+          communityCards: this.communityCards.map(c => c.toJSON()),
+          seats: this.seats.map((p, idx) => {
+            if (!p) return null;
+            const isSelf = p.id === viewerId;
+            const reveal = this.stage === 'SHOWDOWN' || this.stage === 'END_HAND' || p.showCards;
+            return {
+              seatIndex: idx,
+              id: p.id,
+              name: p.name,
+              avatar: p.avatar,
+              isBot: p.isBot,
+              chips: p.chips,
+              currentRoundBet: p.currentRoundBet,
+              totalBet: p.totalBet,
+              folded: p.folded,
+              allIn: p.allIn,
+              lastAction: p.lastAction,
+              holeCards: p.holeCards.map(c => (isSelf || reveal) ? c.toJSON() : { isHidden: true })
+            };
+          })
+        };
+      }
+    }
+
+    // ================= 6. 前端主应用控制器 =================
+    class TexasHoldemApp {
+      constructor() {
+        this.mode = 'PVE';
+        this.table = null;
+        this.currentBetSliderValue = 40;
+
+        // 从本地 localStorage 读取持久化用户身份
+        this.loadUserSession();
+      }
+
+      loadUserSession() {
+        try {
+          const raw = localStorage.getItem('poker_user_session');
+          if (raw) {
+            const data = JSON.parse(raw);
+            this.playerId = data.playerId || 'player_user';
+            this.playerName = data.playerName || '扑克之王';
+          } else {
+            this.playerId = 'player_user';
+            this.playerName = '扑克之王';
+            this.saveUserSession();
+          }
+        } catch (e) {
+          this.playerId = 'player_user';
+          this.playerName = '扑克之王';
+        }
+      }
+
+      saveUserSession() {
+        try {
+          localStorage.setItem('poker_user_session', JSON.stringify({
+            playerId: this.playerId,
+            playerName: this.playerName
+          }));
+        } catch (e) {}
+      }
+
+      onNameChange(val) {
+        this.playerName = val.trim() || '扑克之王';
+        this.saveUserSession();
+      }
+
+      init() {
+        document.getElementById('input-player-name').value = this.playerName;
+        
+        // 检查是否有存档数据
+        const rawSave = localStorage.getItem('poker_room_save_OFFLINE');
+        if (rawSave) {
+          try {
+            const data = JSON.parse(rawSave);
+            const mySeat = data.seats ? data.seats.find(s => s && s.id === this.playerId) : null;
+            const currentChips = mySeat ? mySeat.chips : 1000;
+            document.getElementById('saved-chips-badge').innerText = `已存筹码: ${currentChips} 🪙 (第 ${data.handCount} 局)`;
+            document.getElementById('btn-enter-pve-text').innerText = `继续游戏 (拥有 ${currentChips} 筹码)`;
+          } catch (e) {}
+        }
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      switchLobbyTab(tab) {
+        if (tab === 'pve') {
+          document.getElementById('tab-pve').className = 'py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow transition';
+          document.getElementById('tab-pvp').className = 'py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+          document.getElementById('pve-panel').classList.remove('hidden');
+          document.getElementById('pvp-panel').classList.add('hidden');
+        } else {
+          document.getElementById('tab-pvp').className = 'py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow transition';
+          document.getElementById('tab-pve').className = 'py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+          document.getElementById('pvp-panel').classList.remove('hidden');
+          document.getElementById('pve-panel').classList.add('hidden');
+        }
+      }
+
+      showLobbyModal() { 
+        this.init();
+        document.getElementById('modal-lobby').classList.remove('hidden'); 
+      }
+      hideLobbyModal() { document.getElementById('modal-lobby').classList.add('hidden'); }
+
+      toggleStatsModal(show) {
+        const modal = document.getElementById('modal-stats');
+        if (show) {
+          modal.classList.remove('hidden');
+          this.renderStats();
+        } else modal.classList.add('hidden');
+      }
+
+      toggleHistoryModal(show) {
+        const modal = document.getElementById('modal-history');
+        if (show) {
+          modal.classList.remove('hidden');
+          this.renderHistory();
+        } else modal.classList.add('hidden');
+      }
+
+      // 重置单人房间存档
+      resetPveRoom() {
+        if (confirm('确认清空当前单人房间的所有筹码与战绩，恢复 1000 初始筹码？')) {
+          localStorage.removeItem('poker_room_save_OFFLINE');
+          document.getElementById('saved-chips-badge').innerText = '本地已存: 1000 🪙';
+          document.getElementById('btn-enter-pve-text').innerText = '进入永久练习房间';
+          this.startOfflinePve(true);
+        }
+      }
+
+      startOfflinePve(forceReset = false) {
+        this.mode = 'PVE';
+        this.playerName = document.getElementById('input-player-name').value.trim() || '扑克之王';
+        this.saveUserSession();
+        this.hideLobbyModal();
+
+        document.getElementById('room-id-display').innerText = '房间: 永久练习房';
+        document.getElementById('btn-share-room').classList.add('hidden');
+
+        this.table = new PersistentPokerTable({
+          id: 'OFFLINE',
+          maxSeats: 10,
+          smallBlind: 10,
+          bigBlind: 20,
+          defaultBuyIn: 1000
+        });
+
+        this.table.onStateChange = (t) => {
+          this.renderTable(t.getPublicState(this.playerId));
+          this.checkBotTurn();
+        };
+
+        this.table.onLog = (msg) => this.addLogMessage(msg);
+
+        // 尝试恢复存档
+        let hasLoaded = false;
+        if (!forceReset) {
+          hasLoaded = this.table.loadFromStorage();
+        }
+
+        if (hasLoaded && this.table.seats[0]) {
+          // 更新本人昵称
+          this.table.seats[0].name = this.playerName;
+          this.addLogMessage(`已恢复房间状态，您当前拥有 ${this.table.seats[0].chips} 筹码`);
+        } else {
+          // 初始排座：玩家入座 0 号位
+          this.table.sitDown(0, {
+            id: this.playerId,
+            name: this.playerName,
+            chips: 1000,
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}`
+          });
+
+          // 填充 9 个 AI 陪练
+          for (let i = 1; i < 10; i++) {
+            const bName = BOT_NAMES[i - 1];
+            this.table.sitDown(i, {
+              id: `bot_${i}`,
+              name: bName,
+              isBot: true,
+              chips: 1000,
+              avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${bName}`
+            });
+          }
+        }
+
+        // 立即开启/继续牌局
+        this.table.startNewHand();
+      }
+
+      checkBotTurn() {
+        if (!this.table || this.table.stage === 'IDLE' || this.table.stage === 'END_HAND') return;
+        const actor = this.table.seats[this.table.currentActorSeat];
+        if (actor && actor.isBot) {
+          setTimeout(() => {
+            if (this.table.seats[this.table.currentActorSeat] && this.table.seats[this.table.currentActorSeat].id === actor.id) {
+              const dec = PokerBot.decide(this.table, actor);
+              this.table.playerAction(actor.id, dec.action, dec.amount);
+            }
+          }, 700 + Math.random() * 700);
+        }
+      }
+
+      startGame() {
+        if (this.table) this.table.startNewHand();
+      }
+
+      performAction(act) {
+        if (this.table) {
+          this.table.playerAction(this.playerId, act, this.currentBetSliderValue);
+        }
+      }
+
+      rebuy() {
+        if (this.table) this.table.rebuy(this.playerId, 1000);
+      }
+
+      setBetPreset(type) {
+        if (!this.table) return;
+        const cur = this.table.currentBet;
+        const pot = this.table.pot;
+        const minR = this.table.minRaise;
+        const bb = this.table.bigBlind;
+
+        let target = cur + minR;
+        if (type === '2.5bb') target = Math.round(bb * 2.5);
+        else if (type === 'half_pot') target = Math.max(cur + minR, Math.round(pot * 0.5));
+        else if (type === 'two_thirds_pot') target = Math.max(cur + minR, Math.round(pot * 0.66));
+        else if (type === 'pot') target = Math.max(cur + minR, pot);
+        else if (type === 'all_in') { this.performAction('allIn'); return; }
+
+        this.onSliderChange(target);
+      }
+
+      onSliderChange(v) {
+        this.currentBetSliderValue = parseInt(v, 10);
+        document.getElementById('bet-slider').value = this.currentBetSliderValue;
+        document.getElementById('bet-slider-val').innerText = this.currentBetSliderValue;
+        document.getElementById('raise-label').innerText = `加注至 ${this.currentBetSliderValue}`;
+      }
+
+      renderTable(state) {
+        document.getElementById('table-pot').innerText = state.pot;
+        document.getElementById('room-blind-display').innerText = `盲注: ${state.smallBlind}/${state.bigBlind}`;
+
+        // 公共牌
+        const cc = document.getElementById('community-cards');
+        let cHtml = '';
+        for (let i = 0; i < 5; i++) {
+          if (state.communityCards[i]) {
+            const c = state.communityCards[i];
+            const col = c.suit === 'h' ? 'text-red-600' : c.suit === 'd' ? 'text-blue-600' : c.suit === 'c' ? 'text-emerald-700' : 'text-slate-900';
+            cHtml += `
+              <div class="w-10 h-14 md:w-15 md:h-22 bg-white rounded-lg poker-card border border-slate-300 flex flex-col justify-between p-1 font-bold ${col} select-none">
+                <div class="text-xs leading-none">${c.label}</div>
+                <div class="text-base md:text-xl text-center leading-none">${c.symbol}</div>
+                <div class="text-xs leading-none text-right">${c.label}</div>
+              </div>
+            `;
+          } else {
+            cHtml += `<div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">${i + 1}</div>`;
+          }
+        }
+        cc.innerHTML = cHtml;
+
+        // 10人座位
+        const sc = document.getElementById('seats-container');
+        let sHtml = '';
+        for (let i = 0; i < 10; i++) {
+          const angle = (i * 36 + 90) * (Math.PI / 180);
+          const leftPercent = 50 + 43 * Math.cos(angle);
+          const topPercent = 50 + 40 * Math.sin(angle);
+
+          const p = state.seats[i];
+          if (p) {
+            const isActor = state.currentActorSeat === i;
+            const isD = state.dealerSeat === i;
+            const isSB = state.smallBlindSeat === i;
+            const isBB = state.bigBlindSeat === i;
+
+            sHtml += `
+              <div class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-auto transition-all" style="top: ${topPercent}%; left: ${leftPercent}%;">
+                <!-- 手牌 -->
+                <div class="flex items-center -space-x-3 mb-0.5">
+                  ${p.holeCards.map(c => c.isHidden ? `
+                    <div class="w-6 h-9 md:w-8 md:h-11 bg-gradient-to-br from-blue-700 to-indigo-900 rounded border border-blue-400/50 shadow flex items-center justify-center text-[9px] text-blue-200">🂠</div>
+                  ` : `
+                    <div class="w-6 h-9 md:w-8 md:h-11 bg-white rounded border border-slate-300 shadow flex flex-col justify-between p-0.5 font-bold ${c.suit === 'h' ? 'text-red-600' : c.suit === 'd' ? 'text-blue-600' : c.suit === 'c' ? 'text-emerald-700' : 'text-slate-900'} text-[9px]">
+                      <div>${c.label}</div>
+                      <div class="text-center">${c.symbol}</div>
+                    </div>
+                  `).join('')}
+                </div>
+
+                <!-- 头像 -->
+                <div class="relative">
+                  <img src="${p.avatar}" class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-800 border-2 ${isActor ? 'border-amber-400 acting-pulse scale-110' : 'border-slate-700'} ${p.folded ? 'opacity-30 grayscale' : ''}">
+                  ${isActor ? `<div class="absolute -top-2 -right-2 px-1 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black font-mono-code">${state.actionTimeRemaining}s</div>` : ''}
+                  ${isD ? '<span class="absolute -bottom-1 -left-1 w-3.5 h-3.5 rounded-full bg-amber-400 text-slate-950 text-[8px] font-black flex items-center justify-center shadow">D</span>' : ''}
+                  ${isSB ? '<span class="absolute -bottom-1 -left-1 w-3.5 h-3.5 rounded-full bg-blue-500 text-white text-[8px] font-bold flex items-center justify-center shadow">S</span>' : ''}
+                  ${isBB ? '<span class="absolute -bottom-1 -left-1 w-3.5 h-3.5 rounded-full bg-purple-500 text-white text-[8px] font-bold flex items-center justify-center shadow">B</span>' : ''}
+                </div>
+
+                <!-- 昵称/筹码 -->
+                <div class="bg-slate-950/90 border border-slate-800 rounded px-1.5 py-0.5 text-center mt-0.5 shadow max-w-[80px]">
+                  <div class="text-[9px] font-bold text-slate-200 truncate">${p.name}</div>
+                  <div class="text-[9px] font-mono-code font-bold text-amber-400">🪙 ${p.chips}</div>
+                </div>
+
+                ${p.lastAction ? `<div class="mt-0.5 px-1.5 py-0.2 rounded-full bg-black/80 border border-amber-500/30 text-[8px] text-amber-200">${p.lastAction}</div>` : ''}
+              </div>
+            `;
+          }
+        }
+        sc.innerHTML = sHtml;
+
+        // 提示信息
+        if (state.stage === 'END_HAND' && state.handWinners.length > 0) {
+          const names = state.handWinners.map(w => `${w.name} (+${w.totalWon})`).join(', ');
+          document.getElementById('table-status-message').innerText = `🏆 本局赢家: ${names}`;
+          if (state.handWinners.some(w => w.playerId === this.playerId) && window.confetti) {
+            window.confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+          }
+        } else {
+          document.getElementById('table-status-message').innerText = state.stage === 'IDLE' ? '等待开始...' : `第 ${state.handCount} 局 [${state.stage}]`;
+        }
+
+        this.updateControls(state);
+        if (window.lucide) lucide.createIcons();
+      }
+
+      updateControls(state) {
+        const mySeat = state.seats.find(s => s && s.id === this.playerId);
+        if (mySeat) {
+          document.getElementById('my-name').innerText = mySeat.name;
+          document.getElementById('my-chips').innerText = mySeat.chips;
+          document.getElementById('my-avatar').src = mySeat.avatar;
+          if (mySeat.chips === 0) document.getElementById('btn-rebuy').classList.remove('hidden');
+          else document.getElementById('btn-rebuy').classList.add('hidden');
+        }
+
+        const isMyTurn = state.currentActorSeat !== -1 && state.seats[state.currentActorSeat] && state.seats[state.currentActorSeat].id === this.playerId;
+        const btnFold = document.getElementById('btn-fold');
+        const btnCheckCall = document.getElementById('btn-check-call');
+        const btnRaise = document.getElementById('btn-raise');
+        const quickBetBar = document.getElementById('quick-bet-bar');
+        const betSlider = document.getElementById('bet-slider');
+
+        if (isMyTurn && mySeat && !mySeat.folded && !mySeat.allIn) {
+          btnFold.disabled = false;
+          btnCheckCall.disabled = false;
+          btnRaise.disabled = false;
+          quickBetBar.classList.remove('hidden');
+
+          const toCall = state.currentBet - mySeat.currentRoundBet;
+          document.getElementById('check-call-label').innerText = toCall === 0 ? '过牌 (Check)' : `跟注 ${Math.min(toCall, mySeat.chips)}`;
+
+          const minR = state.currentBet + state.minRaise;
+          betSlider.min = minR;
+          betSlider.max = mySeat.chips + mySeat.currentRoundBet;
+          if (this.currentBetSliderValue < minR) this.onSliderChange(minR);
+        } else {
+          btnFold.disabled = true;
+          btnCheckCall.disabled = true;
+          btnRaise.disabled = true;
+          quickBetBar.classList.add('hidden');
+        }
+      }
+
+      addLogMessage(msg) {
+        const logBox = document.getElementById('game-logs');
+        const item = document.createElement('div');
+        item.innerText = msg;
+        logBox.appendChild(item);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      renderStats() {
+        const tbody = document.getElementById('leaderboard-tbody');
+        if (!this.table) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-500">暂无战绩</td></tr>';
+          return;
+        }
+        
+        const list = Object.values(this.table.playerStatsMap).map(p => {
+          const winRate = p.played > 0 ? ((p.wins / p.played) * 100).toFixed(1) + '%' : '0.0%';
+          return { ...p, winRate };
+        }).sort((a, b) => b.chips - a.chips);
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-500">暂无累计战绩</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map((p, idx) => `
+          <tr class="hover:bg-slate-800/40">
+            <td class="py-2.5 flex items-center gap-2">
+              <span class="w-4 text-center font-bold text-slate-500">${idx + 1}</span>
+              <span class="font-bold text-slate-200">${p.name}</span>
+            </td>
+            <td class="py-2.5 text-center text-slate-400">${p.played}</td>
+            <td class="py-2.5 text-center text-slate-300">${p.wins}</td>
+            <td class="py-2.5 text-center text-emerald-400 font-bold">${p.winRate}</td>
+            <td class="py-2.5 text-right font-bold text-amber-400">🪙 ${p.chips}</td>
+          </tr>
+        `).join('');
+      }
+
+      renderHistory() {
+        const c = document.getElementById('history-container');
+        if (!this.table || !this.table.handHistoryList || this.table.handHistoryList.length === 0) {
+          c.innerHTML = '<div class="text-center text-slate-500 py-4">暂无历史手牌记录</div>';
+          return;
+        }
+
+        c.innerHTML = this.table.handHistoryList.map(h => `
+          <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-1.5">
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span class="font-bold text-slate-200">第 ${h.handNumber} 局</span>
+              <span>底池: <b class="text-amber-400">${h.pot}</b> 🪙</span>
+            </div>
+            <div class="text-[11px] text-slate-300">
+              公共牌: <b class="text-emerald-400 font-mono-code">${h.communityCards.join(' ') || '翻牌前弃牌'}</b>
+            </div>
+            <div class="text-[11px] text-amber-300">
+              赢家: ${h.winners.map(w => `${w.name} (+${w.totalWon}) [${w.description}]`).join('; ')}
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    const app = new TexasHoldemApp();
+    window.app = app;
+    window.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
+</body>
+</html>
