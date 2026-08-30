@@ -702,10 +702,25 @@ class PokerTable {
 
   togglePauseGame(hostId) {
     if (this.hostId !== hostId) return { success: false, msg: '只有房主可操作' };
-    this.isPaused = !this.isPaused;
-    this.log(`⏸️ 房主将牌局设置为: ${this.isPaused ? '【已暂停】' : '【继续对局】'}`);
-    this.notify();
-    if (!this.isPaused) this.checkAutoStart();
+    if (this.isPaused) {
+      this.isPaused = false;
+      this.log('▶️ 房主开启/恢复了牌局！');
+      const active = this.getActiveSeats();
+      if (active.length === 1) {
+        const emptySeatIdx = this.seats.findIndex(s => s === null);
+        if (emptySeatIdx !== -1) {
+          const botIdx = Math.floor(Math.random() * BOT_NAMES.length);
+          this.sitDown(emptySeatIdx, { id: `bot_${Date.now()}`, name: BOT_NAMES[botIdx] || '高手AI', isBot: true, chips: 1000 });
+          this.log(`🤖 系统已自动安排 1 名 AI 陪练 [${BOT_NAMES[botIdx] || '高手AI'}] 入座，立即发牌！`);
+        }
+      }
+      this.notify();
+      this.checkAutoStart();
+    } else {
+      this.isPaused = true;
+      this.log('⏸️ 房主暂停了牌局');
+      this.notify();
+    }
     return { success: true, isPaused: this.isPaused };
   }
 
@@ -1237,7 +1252,7 @@ class PokerTable {
       return;
     }
 
-    const waitTime = this.stage === 'SHOWDOWN' || (this.handWinners && this.handWinners.some(w => w.description !== '对手全部弃牌')) ? 7500 : 4500;
+    const waitTime = this.stage === 'SHOWDOWN' || (this.handWinners && this.handWinners.some(w => w.description !== '对手全部弃牌')) ? 3200 : 1800;
 
     setTimeout(() => {
       if (this.isPaused || this.isGameEnded) return;
@@ -1680,6 +1695,24 @@ io.on('connection', socket => {
       return r && r.table && !r.table.isGameEnded && (!r.table.expireTimestamp || Date.now() < r.table.expireTimestamp);
     });
     callback({ activeIds });
+  });
+
+  socket.on('add_ai_bot', callback => {
+    if (!currentRoomId || !currentPlayerId) return callback({ success: false, msg: '未在房间内' });
+    const room = rooms.get(currentRoomId);
+    if (!room) return callback({ success: false, msg: '房间不存在' });
+    const emptyIdx = room.table.seats.findIndex(s => s === null);
+    if (emptyIdx === -1) return callback({ success: false, msg: '牌桌席位已满' });
+    const botIdx = Math.floor(Math.random() * BOT_NAMES.length);
+    const res = room.table.sitDown(emptyIdx, {
+      id: `bot_${Date.now()}_${Math.floor(Math.random() * 100)}`,
+      name: BOT_NAMES[botIdx] || '陪练AI',
+      isBot: true,
+      chips: 1000
+    });
+    callback(res);
+    broadcastTable(currentRoomId);
+    checkBotTurn(currentRoomId);
   });
 
   socket.on('toggle_show_card_intent', ({ cardIndex, isSelected }, callback) => {

@@ -435,11 +435,14 @@
     <!-- 中央公共区域 (底池胶囊 + 5 张四色公共牌 + 经典水印) -->
     <div class="relative flex-1 flex flex-col items-center justify-center -mt-6 pointer-events-none">
       
-      <!-- 房主三大黄金大按钮 (牌局未开始时显示) -->
+      <!-- 房主四大黄金大按钮 (牌局未开始时显示) -->
       <div id="center-host-controls" class="hidden pointer-events-auto flex items-center gap-2 mb-3 z-30">
-        <button onclick="app.hostEndGame()" class="dpzx-gold-btn px-3 py-1.5 text-xs">解散比赛</button>
-        <button onclick="app.openInviteModal()" class="dpzx-gold-btn px-3 py-1.5 text-xs">邀请好友</button>
-        <button onclick="app.hostStartOrResume()" class="dpzx-gold-btn px-5 py-1.5 text-xs">开 始</button>
+        <button onclick="app.hostEndGame()" class="dpzx-gold-btn px-2.5 py-1.5 text-xs">解散比赛</button>
+        <button onclick="app.openInviteModal()" class="dpzx-gold-btn px-2.5 py-1.5 text-xs">邀请好友</button>
+        <button onclick="app.addAiBot()" class="dpzx-gold-btn px-2.5 py-1.5 text-xs flex items-center gap-1">
+          <span>🤖</span><span>加AI陪练</span>
+        </button>
+        <button onclick="app.hostStartOrResume()" class="dpzx-gold-btn px-4 py-1.5 text-xs">开 始</button>
       </div>
 
       <!-- 🪙 游戏进行中的总底池筹码胶囊 (1:1 原版气泡) -->
@@ -2116,6 +2119,15 @@
               const box = document.getElementById('btn-show-my-cards-box');
               if (box) box.classList.add('hidden');
             }
+          });
+        }
+      }
+
+      addAiBot() {
+        if (this.socket) {
+          this.socket.emit('add_ai_bot', (res) => {
+            if (res && res.success) this.showToast('已召集 1 名 AI 高手入座！', 'success');
+            else if (res) this.showToast(res.msg, 'error');
           });
         }
       }
