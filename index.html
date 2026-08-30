@@ -1185,6 +1185,18 @@
           创建 4 位数字私人房间 (房主)
         </button>
 
+        <!-- 🔥 最近常玩房间 / 一键回桌 -->
+        <div id="recent-rooms-box" class="hidden space-y-1.5 pt-1.5 border-t border-slate-800">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-400">
+            <span class="flex items-center gap-1 text-amber-300">
+              <span>🕒</span>
+              <span>最近常玩房间 (点击一键回桌)</span>
+            </span>
+            <button type="button" onclick="app.clearRecentRooms()" class="text-slate-500 hover:text-slate-300 text-[10px]">清空</button>
+          </div>
+          <div id="recent-rooms-list" class="space-y-1.5 max-h-28 overflow-y-auto"></div>
+        </div>
+
         <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
           <input type="text" id="input-room-code" placeholder="输入 4 位数字房号" maxlength="4" class="flex-1 font-mono-code px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
           <button onclick="app.joinOnlineRoom()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">
@@ -1465,7 +1477,65 @@
         if (main) {
           main.className = main.className.replace(/theme-\w+/g, '').trim() + ` theme-${savedTheme}`;
         }
+        this.renderRecentRooms();
         if (window.lucide) lucide.createIcons();
+      }
+
+      saveRecentRoom(roomId, name = 'poker', blinds = '10/20') {
+        try {
+          let list = JSON.parse(localStorage.getItem('poker_recent_rooms') || '[]');
+          list = list.filter(r => r && r.id !== roomId);
+          list.unshift({
+            id: roomId,
+            name: name || 'poker',
+            blinds: blinds || '10/20',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          });
+          if (list.length > 5) list = list.slice(0, 5);
+          localStorage.setItem('poker_recent_rooms', JSON.stringify(list));
+        } catch (e) {}
+      }
+
+      renderRecentRooms() {
+        const box = document.getElementById('recent-rooms-box');
+        const listEl = document.getElementById('recent-rooms-list');
+        if (!box || !listEl) return;
+        try {
+          const list = JSON.parse(localStorage.getItem('poker_recent_rooms') || '[]');
+          if (list.length === 0) {
+            box.classList.add('hidden');
+            return;
+          }
+          box.classList.remove('hidden');
+          listEl.innerHTML = list.map(r => `
+            <div onclick="app.quickJoinRoom('${r.id}')" class="flex items-center justify-between p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-[0.98] border border-slate-700/80 cursor-pointer transition shadow">
+              <div class="flex items-center gap-2">
+                <span class="font-mono-code font-black text-amber-400 text-sm bg-slate-950 px-2 py-0.5 rounded-lg border border-amber-500/30">${r.id}</span>
+                <div class="text-left">
+                  <div class="text-xs font-bold text-slate-200 truncate max-w-[110px]">${r.name}</div>
+                  <div class="text-[10px] text-emerald-400 font-mono-code">盲注 ${r.blinds} · ${r.time || ''}</div>
+                </div>
+              </div>
+              <button type="button" class="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-black shadow hover:bg-amber-400">
+                一键回桌 ➔
+              </button>
+            </div>
+          `).join('');
+        } catch (e) {
+          box.classList.add('hidden');
+        }
+      }
+
+      clearRecentRooms() {
+        localStorage.removeItem('poker_recent_rooms');
+        const box = document.getElementById('recent-rooms-box');
+        if (box) box.classList.add('hidden');
+        this.showToast('已清空最近常玩房间记录', 'info');
+      }
+
+      quickJoinRoom(roomId) {
+        document.getElementById('input-room-code').value = roomId;
+        this.joinOnlineRoom();
       }
 
       changePlayerName() {
@@ -1733,6 +1803,7 @@
             durationMinutes: this.selectedDurationMinutes || 0
           }, (res) => {
             if (res && res.success) {
+              this.saveRecentRoom(res.roomId, customRoomName, `${sb}/${bb}`);
               this.hideLobbyModal();
               if (gameMode !== 'PVE') {
                 this.socket.emit('sit_down', {
@@ -1754,6 +1825,9 @@
         this.ensureSocketConnection(() => {
           this.socket.emit('join_room', { roomId: roomCode, player: { id: this.playerId, name: this.playerName } }, (res) => {
             if (res && res.success) {
+              const rName = (res.tableState && res.tableState.name) ? res.tableState.name : 'poker';
+              const rBlinds = (res.tableState && res.tableState.smallBlind) ? `${res.tableState.smallBlind}/${res.tableState.bigBlind}` : '10/20';
+              this.saveRecentRoom(roomCode, rName, rBlinds);
               this.hideLobbyModal();
               const emptyIdx = res.tableState.seats.findIndex(s => s === null);
               if (emptyIdx !== -1) {
