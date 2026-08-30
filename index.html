@@ -45,8 +45,8 @@
     /* 专业四色扑克牌配色 (Four-Color Deck) */
     .card-suit-s { color: #0f172a; } /* 黑桃: 纯黑 */
     .card-suit-h { color: #dc2626; } /* 红桃: 艳红 */
-    .card-suit-d { color: #2563eb; } /* 方块: 皇家蓝 (防混淆) */
-    .card-suit-c { color: #16a34a; } /* 草花: 翡翠绿 (防混淆) */
+    .card-suit-d { color: #2563eb; } /* 方块: 皇家蓝 */
+    .card-suit-c { color: #16a34a; } /* 草花: 翡翠绿 */
 
     @keyframes timer-glow {
       0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9)); }
@@ -86,7 +86,6 @@
       text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.8);
     }
 
-    /* 比赛详情报表深蓝卡片 */
     .report-card-bg {
       background: linear-gradient(180deg, #132442 0%, #0d1a33 100%);
       border: 1px solid #1e3a6a;
@@ -111,17 +110,17 @@
       <div>
         <h1 class="text-sm font-bold tracking-wide flex items-center gap-2">
           <span id="header-room-name">无财便是德</span>
-          <span id="room-mode-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-semibold">四色牌常规桌</span>
+          <span id="room-mode-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-semibold">常规桌</span>
         </h1>
         <div class="text-[11px] text-slate-400 flex items-center gap-2">
-          <span id="room-id-display" class="font-mono-code font-bold text-amber-400">房间: 多人实时房</span>
+          <span id="room-id-display" class="font-mono-code font-bold text-amber-400">房号: 8888</span>
           <span class="text-slate-600">|</span>
           <span id="room-blind-display">盲注: 10/20</span>
         </div>
       </div>
     </div>
 
-    <!-- 顶部中心快捷开关 (BB模式 / 四色牌 / 房主控制) -->
+    <!-- 顶部中心快捷开关 -->
     <div class="flex items-center gap-2">
       
       <!-- 🪙 金币 / 🅱️ BB 显示切换开关 -->
@@ -136,10 +135,10 @@
         <span>房主管理</span>
       </button>
 
-      <!-- 邀请好友 -->
-      <button onclick="app.copyRoomLink()" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 transition">
+      <!-- 邀请好友 (双重邀请方式：4位码 + 链接) -->
+      <button onclick="app.openInviteModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 transition shadow">
         <i data-lucide="share-2" class="w-3.5 h-3.5 text-amber-400"></i>
-        <span class="hidden sm:inline">邀请</span>
+        <span>邀请好友</span>
       </button>
 
       <!-- +AI 陪练 -->
@@ -148,9 +147,9 @@
         <span>+AI</span>
       </button>
 
-      <!-- 房间大厅 -->
-      <button onclick="app.showLobbyModal()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-        <i data-lucide="menu" class="w-4 h-4"></i>
+      <!-- 返回大厅 -->
+      <button onclick="app.showLobbyModal()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="模式选择/切换大厅">
+        <i data-lucide="grid" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
@@ -180,7 +179,7 @@
       
       <div class="absolute inset-3 md:inset-6 rounded-[90px] md:rounded-[180px] border border-emerald-400/20 pointer-events-none flex flex-col items-center justify-center opacity-30">
         <span class="font-poker text-xl md:text-3xl tracking-widest text-emerald-100/40 select-none">TEXAS HOLD'EM</span>
-        <span class="text-[10px] md:text-xs text-emerald-200/30 tracking-wider mt-0.5">FOUR COLOR · TIME BANK · RABBIT HUNT</span>
+        <span class="text-[10px] md:text-xs text-emerald-200/30 tracking-wider mt-0.5">FOUR COLOR · 4-DIGIT PIN · TOURNAMENT</span>
       </div>
 
       <!-- 中央公共牌区与底池展示 -->
@@ -249,14 +248,12 @@
           <span id="my-name" class="font-bold truncate max-w-[70px]">我的昵称</span>
           <span id="my-chips-display" class="font-mono-code font-bold text-amber-400">1000 🪙</span>
           
-          <!-- 个人座位选项 -->
           <div id="seat-options-menu" class="hidden flex items-center gap-1 pl-1">
             <button id="btn-sit-out" onclick="app.toggleSitOut()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300">暂离</button>
             <button onclick="app.standUp()" class="px-1.5 py-0.5 rounded bg-rose-950 hover:bg-rose-900 border border-rose-800/50 text-[10px] text-rose-300">站起</button>
           </div>
         </div>
 
-        <!-- 秀单张 / 秀双张按钮 -->
         <div id="show-cards-bar" class="hidden flex items-center gap-1 pl-2 border-l border-slate-800">
           <button onclick="app.showCards('left')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700" title="只亮左边一张牌">秀左牌</button>
           <button onclick="app.showCards('right')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700" title="只亮右边一张牌">秀右牌</button>
@@ -264,7 +261,7 @@
         </div>
       </div>
 
-      <!-- 预选操作区 (未轮到自己时显示) -->
+      <!-- 预选操作区 -->
       <div id="pre-action-bar" class="hidden flex items-center gap-3 bg-slate-800/90 px-3 py-1 rounded-xl border border-slate-700">
         <span class="text-[10px] text-slate-400 font-semibold">预选:</span>
         <label class="flex items-center gap-1 cursor-pointer text-[11px] text-slate-200">
@@ -295,7 +292,7 @@
 
     </div>
 
-    <!-- 底部主操作条：弹幕聊天 + 加注滑块 + 弃/过/跟/注/加时 -->
+    <!-- 底部主操作条 -->
     <div class="flex items-center justify-between gap-2">
       
       <!-- 💬 实时弹幕聊天输入框 -->
@@ -351,6 +348,44 @@
     </div>
 
   </footer>
+
+  <!-- ================= 弹窗 A：双重邀请好友专属弹窗 (4位数字码 + 网页链接) ================= -->
+  <div id="modal-invite" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-5 text-center">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="share-2" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-base font-bold text-white">邀请好友同桌对局</h3>
+        </div>
+        <button onclick="document.getElementById('modal-invite').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 方式一：4 位纯数字房间码 (最方便直接口头/打字发微信) -->
+      <div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700/80 space-y-2">
+        <div class="text-xs text-slate-400 font-semibold">方式 1：纯 4 位数字房间码</div>
+        <div id="invite-room-code-display" class="font-mono-code text-3xl font-black text-amber-400 tracking-widest py-1 bg-slate-950/80 rounded-xl border border-amber-500/30 shadow-inner">
+          8888
+        </div>
+        <button onclick="app.copyRoomCodeOnly()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition flex items-center justify-center gap-1.5 shadow">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>一键复制 4 位房号发微信</span>
+        </button>
+      </div>
+
+      <!-- 方式二：完整直达链接 -->
+      <div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700/80 space-y-2">
+        <div class="text-xs text-slate-400 font-semibold">方式 2：直达房间网页链接</div>
+        <input type="text" id="invite-url-input" readonly class="w-full text-center px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-[11px] font-mono-code text-slate-300 focus:outline-none">
+        <button onclick="app.copyRoomLinkOnly()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1.5">
+          <i data-lucide="link" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span>一键复制直达链接</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
 
   <!-- ================= 弹窗 1：左抽屉 · 实时各家胜负排行榜 ================= -->
   <div id="modal-stats" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -427,11 +462,10 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗 4：🏆 1:1 专业比赛详情大结算大报表 (根据用户截图高保真定制) ================= -->
+  <!-- ================= 弹窗 4：🏆 1:1 专业比赛详情大结算大报表 ================= -->
   <div id="modal-summary" class="hidden fixed inset-0 bg-black/95 backdrop-blur-lg z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
     <div class="w-full max-w-md rounded-3xl p-4 md:p-5 shadow-2xl space-y-4 text-center my-auto" style="background-color: #0d1626;">
       
-      <!-- 顶部标题与返回按钮 -->
       <div class="flex items-center justify-between text-slate-300 px-1">
         <button onclick="document.getElementById('modal-summary').classList.add('hidden')" class="p-1 hover:text-white">
           <i data-lucide="arrow-left" class="w-5 h-5"></i>
@@ -446,7 +480,6 @@
       <div class="report-card-bg rounded-2xl p-4 shadow-lg space-y-3 text-slate-300">
         <div id="summary-room-title" class="text-lg font-black text-white tracking-wide">无财便是德</div>
         
-        <!-- 三列指标：基础分级别 / 总手数 / 创建者 -->
         <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-700/40">
           <div>
             <div class="text-[11px] text-slate-400">基础分级别</div>
@@ -470,7 +503,6 @@
       <!-- 2. 三大立体金色头衔奖章 (老板 / MVP / 劳模) -->
       <div class="grid grid-cols-3 gap-2 px-1 pt-1">
         
-        <!-- 左：老板 (贡献最多/输最多) -->
         <div class="flex flex-col items-center">
           <div class="flex items-center gap-1 text-amber-400 text-xs font-extrabold mb-1">
             <span>🤵 老板</span>
@@ -479,7 +511,6 @@
           <div id="badge-boss-name" class="text-[11px] font-bold text-slate-200 mt-1 truncate max-w-[80px]">就不投三分</div>
         </div>
 
-        <!-- 中：MVP (净盈利第一冠军) -->
         <div class="flex flex-col items-center">
           <div class="flex items-center gap-1 text-amber-300 text-sm font-black mb-1">
             <span>👑 MVP</span>
@@ -488,7 +519,6 @@
           <div id="badge-mvp-name" class="text-xs font-black text-amber-300 mt-1 truncate max-w-[85px]">liangbg</div>
         </div>
 
-        <!-- 右：劳模 (打手牌局数最多) -->
         <div class="flex flex-col items-center">
           <div class="flex items-center gap-1 text-amber-400 text-xs font-extrabold mb-1">
             <span>⚒️ 劳模</span>
@@ -499,7 +529,7 @@
 
       </div>
 
-      <!-- 3. 全员战绩结算数据表 (表头：昵称 / 手数 / 带入 / 战绩) -->
+      <!-- 3. 全员战绩结算数据表 -->
       <div class="rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden text-left">
         <table class="w-full text-xs">
           <thead class="text-slate-400 border-b border-slate-800/80 text-[11px]">
@@ -514,7 +544,7 @@
         </table>
       </div>
 
-      <!-- 4. 底部快捷操作栏 (分享/复制战报) -->
+      <!-- 4. 底部操作栏 -->
       <div class="flex items-center justify-between gap-3 pt-2">
         <button onclick="app.copySummaryReport()" class="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20">
           <i data-lucide="share" class="w-4 h-4"></i>
@@ -528,15 +558,15 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗 5：大厅模式选择 (支持自定义房间名) ================= -->
+  <!-- ================= 弹窗 5：大厅首页 (支持好友常规 / SNG锦标赛 / 9AI练习赛三大模式) ================= -->
   <div id="modal-lobby" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
       <div class="text-center space-y-1">
         <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center font-poker text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/30">
           ♠
         </div>
-        <h2 class="text-xl font-extrabold text-white">德州聚会 Pro</h2>
-        <p class="text-xs text-slate-400">自定义房间名 · 专业比赛结算大报表</p>
+        <h2 class="text-xl font-extrabold text-white">德州聚会 Pro 大厅</h2>
+        <p class="text-xs text-slate-400">选择游戏模式 · 纯 4 位数字房间码极速畅玩</p>
       </div>
 
       <!-- 玩家昵称输入 -->
@@ -545,25 +575,65 @@
         <input type="text" id="input-player-name" value="阿庞" maxlength="10" oninput="app.onNameChange(this.value)" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-amber-400 transition" placeholder="输入昵称">
       </div>
 
-      <!-- 房间名称输入 (像设置用户名一样自由定制) -->
-      <div class="space-y-1">
-        <label class="text-xs font-semibold text-slate-300">房间名称 (比赛标题)</label>
-        <input type="text" id="input-room-name" value="无财便是德" maxlength="16" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-amber-300 focus:outline-none focus:border-amber-400 transition" placeholder="如：无财便是德 / 兄弟聚会局">
+      <!-- 首页三大模式选项卡 -->
+      <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-800/80 rounded-2xl border border-slate-700/60">
+        <button id="tab-cash" onclick="app.switchLobbyMode('cash')" class="py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow transition">
+          👥 好友常规
+        </button>
+        <button id="tab-sng" onclick="app.switchLobbyMode('sng')" class="py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
+          🏆 SNG锦标赛
+        </button>
+        <button id="tab-ai" onclick="app.switchLobbyMode('ai')" class="py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
+          🤖 9 AI 练习
+        </button>
       </div>
 
-      <div class="space-y-2 pt-2">
-        <button onclick="app.createOnlineRoom()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
+      <!-- 模式面板 1：好友多人常规桌 -->
+      <div id="panel-cash" class="space-y-3">
+        <div class="space-y-1">
+          <label class="text-xs font-semibold text-slate-300">房间名称 (比赛标题)</label>
+          <input type="text" id="input-room-name-cash" value="无财便是德" maxlength="16" class="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-amber-300 focus:outline-none focus:border-amber-400" placeholder="如：无财便是德">
+        </div>
+
+        <button onclick="app.createOnlineRoom('CASH')" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
           <i data-lucide="plus-circle" class="w-4 h-4"></i>
-          <span>创建专属比赛房间 (房主)</span>
+          <span>创建 4 位数字私人房间 (房主)</span>
         </button>
-        
-        <div class="flex items-center gap-2 pt-1">
-          <input type="text" id="input-room-code" placeholder="输入 6 位房间码" maxlength="6" class="flex-1 uppercase font-mono-code px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
+
+        <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
+          <input type="text" id="input-room-code" placeholder="输入 4 位数字房号" maxlength="4" class="flex-1 font-mono-code px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
           <button onclick="app.joinOnlineRoom()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">
-            加入房间
+            快速加房
           </button>
         </div>
       </div>
+
+      <!-- 模式面板 2：SNG 锦标赛 -->
+      <div id="panel-sng" class="hidden space-y-3">
+        <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1 leading-relaxed">
+          <div class="font-bold text-amber-400 flex items-center gap-1"><i data-lucide="award" class="w-3.5 h-3.5"></i> SNG 淘汰赛规则：</div>
+          <div>每人 1000 起始筹码，每 5 分钟定时升盲，筹码归零淘汰，最后决出总冠军！</div>
+        </div>
+
+        <button onclick="app.createOnlineRoom('TOURNAMENT')" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-lg shadow-purple-500/20 transition flex items-center justify-center gap-2">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+          <span>创建 SNG 锦标赛房间</span>
+        </button>
+      </div>
+
+      <!-- 模式面板 3：9 AI 练习赛 -->
+      <div id="panel-ai" class="hidden space-y-3">
+        <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1 leading-relaxed">
+          <div class="font-bold text-emerald-400 flex items-center gap-1"><i data-lucide="bot" class="w-3.5 h-3.5"></i> 单人 AI 陪练房：</div>
+          <div>系统为您安排 9 名具备紧凶、松凶、老谋深算不同风格的 AI 高手同台对练，即开即打！</div>
+        </div>
+
+        <button onclick="app.createOnlineRoom('PVE')" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+          <i data-lucide="play-circle" class="w-4 h-4"></i>
+          <span>进入 9 AI 练习赛 (即开即玩)</span>
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -617,9 +687,37 @@
         const params = new URLSearchParams(window.location.search);
         const roomQuery = params.get('room');
         if (roomQuery) {
-          document.getElementById('input-room-code').value = roomQuery.toUpperCase();
+          document.getElementById('input-room-code').value = roomQuery.trim();
         }
         if (window.lucide) lucide.createIcons();
+      }
+
+      switchLobbyMode(mode) {
+        const tabCash = document.getElementById('tab-cash');
+        const tabSng = document.getElementById('tab-sng');
+        const tabAi = document.getElementById('tab-ai');
+        const panelCash = document.getElementById('panel-cash');
+        const panelSng = document.getElementById('panel-sng');
+        const panelAi = document.getElementById('panel-ai');
+
+        tabCash.className = 'py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition';
+        tabSng.className = 'py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition';
+        tabAi.className = 'py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition';
+
+        panelCash.classList.add('hidden');
+        panelSng.classList.add('hidden');
+        panelAi.classList.add('hidden');
+
+        if (mode === 'cash') {
+          tabCash.className = 'py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow transition';
+          panelCash.classList.remove('hidden');
+        } else if (mode === 'sng') {
+          tabSng.className = 'py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow transition';
+          panelSng.classList.remove('hidden');
+        } else if (mode === 'ai') {
+          tabAi.className = 'py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 shadow transition';
+          panelAi.classList.remove('hidden');
+        }
       }
 
       showLobbyModal() { this.init(); document.getElementById('modal-lobby').classList.remove('hidden'); }
@@ -643,6 +741,30 @@
         else m.classList.add('hidden');
       }
 
+      // ================= 邀请好友双重方式弹窗 =================
+      openInviteModal() {
+        const roomId = this.tableState ? this.tableState.id : '';
+        if (!roomId) { alert('请先创建或加入房间！'); return; }
+
+        document.getElementById('invite-room-code-display').innerText = roomId;
+        const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+        document.getElementById('invite-url-input').value = url;
+        document.getElementById('modal-invite').classList.remove('hidden');
+      }
+
+      copyRoomCodeOnly() {
+        const roomId = this.tableState ? this.tableState.id : '';
+        const roomName = this.tableState ? this.tableState.name : '无财便是德';
+        const text = `【德州聚会】房名: ${roomName} | 4位数字房号: ${roomId} ，直接在网页输入房号进房开打！`;
+        navigator.clipboard.writeText(text).then(() => alert(`已复制 4 位房号信息：\n${text}\n\n直接粘贴发到微信群即可！`)).catch(() => prompt('请复制房号：', roomId));
+      }
+
+      copyRoomLinkOnly() {
+        const roomId = this.tableState ? this.tableState.id : '';
+        const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+        navigator.clipboard.writeText(url).then(() => alert(`已复制房间直达链接：\n${url}\n\n发给好友点开直接入座！`)).catch(() => prompt('请复制：', url));
+      }
+
       toggleDisplayMode() {
         this.displayMode = this.displayMode === 'CHIPS' ? 'BB' : 'CHIPS';
         document.getElementById('label-display-mode').innerText = this.displayMode === 'CHIPS' ? '🪙 金币' : '🅱️ 大盲BB';
@@ -654,13 +776,6 @@
           return (amt / this.tableState.bigBlind).toFixed(1) + ' BB';
         }
         return amt.toLocaleString() + ' 🪙';
-      }
-
-      copyRoomLink() {
-        const roomId = this.tableState ? this.tableState.id : '';
-        if (!roomId) { alert('请先创建或加入房间！'); return; }
-        const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
-        navigator.clipboard.writeText(url).then(() => alert(`已复制房间链接：\n${url}\n\n发给好友直接同桌对战！`)).catch(() => prompt('请复制：', url));
       }
 
       // ================= 弹幕 =================
@@ -770,33 +885,37 @@
         this.socket.on('broadcast_game_summary', ({ summary }) => this.showSummaryModal(summary));
       }
 
-      createOnlineRoom() {
+      createOnlineRoom(gameMode = 'CASH') {
         this.playerName = document.getElementById('input-player-name').value.trim() || '阿庞';
-        const customRoomName = document.getElementById('input-room-name').value.trim() || '无财便是德';
+        const customRoomName = document.getElementById('input-room-name-cash').value.trim() || '无财便是德';
         this.saveUserSession();
 
         this.ensureSocketConnection(() => {
           this.socket.emit('create_room', {
             playerId: this.playerId,
             hostName: this.playerName,
-            name: customRoomName
+            name: customRoomName,
+            gameMode: gameMode
           }, (res) => {
             if (res && res.success) {
               this.hideLobbyModal();
-              document.getElementById('room-id-display').innerText = `房间: ${res.roomId}`;
+              document.getElementById('room-id-display').innerText = `房号: ${res.roomId}`;
               document.getElementById('header-room-name').innerText = res.roomName;
-              this.socket.emit('sit_down', {
-                seatIndex: 0,
-                player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
-              }, () => {});
+              
+              if (gameMode !== 'PVE') {
+                this.socket.emit('sit_down', {
+                  seatIndex: 0,
+                  player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
+                }, () => {});
+              }
             }
           });
         });
       }
 
       joinOnlineRoom() {
-        const roomCode = document.getElementById('input-room-code').value.trim().toUpperCase();
-        if (!roomCode || roomCode.length < 4) { alert('请输入有效房间码'); return; }
+        const roomCode = document.getElementById('input-room-code').value.trim();
+        if (!roomCode || roomCode.length < 4) { alert('请输入 4 位纯数字房间码'); return; }
         this.playerName = document.getElementById('input-player-name').value.trim() || '阿庞';
         this.saveUserSession();
 
@@ -804,7 +923,7 @@
           this.socket.emit('join_room', { roomId: roomCode, player: { id: this.playerId, name: this.playerName } }, (res) => {
             if (res && res.success) {
               this.hideLobbyModal();
-              document.getElementById('room-id-display').innerText = `房间: ${res.roomId}`;
+              document.getElementById('room-id-display').innerText = `房号: ${res.roomId}`;
               const emptyIdx = res.tableState.seats.findIndex(s => s === null);
               if (emptyIdx !== -1) {
                 this.socket.emit('sit_down', {
@@ -812,7 +931,7 @@
                   player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
                 }, () => {});
               }
-            } else alert(res ? res.msg : '房间不存在');
+            } else alert(res ? res.msg : '4 位房间码不存在');
           });
         });
       }
@@ -865,10 +984,16 @@
       renderTable(state) {
         this.tableState = state;
         document.getElementById('header-room-name').innerText = state.name || '无财便是德';
+        document.getElementById('room-id-display').innerText = `房号: ${state.id}`;
         document.getElementById('table-pot').innerText = this.displayMode === 'BB' ? (state.pot / state.bigBlind).toFixed(1) : state.pot.toLocaleString();
         document.getElementById('table-pot-unit').innerText = this.displayMode === 'BB' ? 'BB' : '🪙';
         document.getElementById('room-blind-display').innerText = `盲注: ${state.smallBlind}/${state.bigBlind}`;
         document.getElementById('hand-count-pill').innerText = `第${state.handCount}手`;
+
+        const badgeEl = document.getElementById('room-mode-badge');
+        if (state.gameMode === 'TOURNAMENT') badgeEl.innerText = '🏆 SNG淘汰赛';
+        else if (state.gameMode === 'PVE') badgeEl.innerText = '🤖 9 AI 练习';
+        else badgeEl.innerText = '常规桌';
 
         const btnHost = document.getElementById('btn-host-panel');
         if (state.isHost) btnHost.classList.remove('hidden');
@@ -918,7 +1043,7 @@
                   ${isBB ? '<span class="px-1.5 py-0.2 rounded-full badge-bb text-[10px] font-black tracking-wider">BB 大盲</span>' : ''}
                 </div>
 
-                <!-- 手牌 (四色牌) -->
+                <!-- 手牌 -->
                 <div class="flex items-center -space-x-3 mb-0.5">
                   ${p.holeCards.map(c => c.isHidden ? `
                     <div class="w-6 h-9 md:w-8 md:h-11 bg-gradient-to-br from-blue-700 to-indigo-900 rounded border border-blue-400/50 shadow flex items-center justify-center text-[9px] text-blue-200">🂠</div>
@@ -930,7 +1055,7 @@
                   `).join('')}
                 </div>
 
-                <!-- 头像 & 时间银行指示 -->
+                <!-- 头像 & 倒计时 -->
                 <div class="relative">
                   <img src="${p.avatar}" class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-800 border-2 ${isActor ? 'border-amber-400 acting-pulse scale-110' : 'border-slate-700'} ${p.folded || p.sittingOut ? 'opacity-30 grayscale' : ''}">
                   ${isActor ? `
@@ -1114,18 +1239,15 @@
         }
       }
 
-      // ================= 🏆 1:1 复刻比赛详情大结算战报 =================
       showSummaryModal(summary) {
         this.lastSummaryData = summary;
         
-        // 1. 基础信息卡片
         document.getElementById('summary-room-title').innerText = summary.roomName || '无财便是德';
         document.getElementById('summary-blind-info').innerText = summary.blindInfo || '10/20(0)';
         document.getElementById('summary-hand-count').innerText = summary.handCount || 0;
         document.getElementById('summary-host-name').innerText = summary.hostName || '阿庞';
         document.getElementById('summary-time-line').innerText = `训练赛 | 国际扑克 ${summary.startTimeStr} ~ ${summary.endTimeStr} (时长: ${summary.durationStr})`;
 
-        // 2. 三大勋章：MVP / 老板 / 劳模
         if (summary.mvp) {
           document.getElementById('badge-mvp-name').innerText = summary.mvp.name;
           document.getElementById('badge-mvp-avatar').src = summary.mvp.avatar;
@@ -1139,7 +1261,6 @@
           document.getElementById('badge-worker-avatar').src = summary.hardWorker.avatar;
         }
 
-        // 3. 选手表格
         const tbody = document.getElementById('summary-tbody');
         tbody.innerHTML = summary.players.map((p, idx) => {
           const isProfit = p.netProfit >= 0;

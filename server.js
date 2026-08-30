@@ -263,7 +263,7 @@ class PotManager {
   }
 }
 
-// ================= AI 决策 =================
+// ================= AI 陪练 =================
 const BOT_NAMES = [
   '周星星·赌圣', '高进·赌神', '陈刀仔', '老谋深算·老王',
   '狂徒·杰克', '数学家·冯诺', '锦鲤·小美', '稳健大师·强哥',
@@ -318,33 +318,47 @@ class PokerBot {
   }
 }
 
-// ================= 专业级德州扑克牌桌状态机 =================
+// ================= 专业德州牌桌状态机 =================
 class PokerTable {
   constructor({ id, hostId, hostName = '房主', name = '无财便是德', maxSeats = 10, gameMode = 'CASH', smallBlind = 10, bigBlind = 20, defaultBuyIn = 1000 }) {
-    this.id = id;
+    this.id = id; // 纯 4 位数字房间号
     this.hostId = hostId;
     this.hostName = hostName;
-    this.name = name; // 自定义房间名
+    this.name = name;
     this.maxSeats = maxSeats;
-    this.gameMode = gameMode;
+    this.gameMode = gameMode; // CASH (常规) 或 TOURNAMENT (SNG淘汰赛) 或 PVE (练习)
     this.smallBlind = smallBlind;
     this.bigBlind = bigBlind;
     this.defaultBuyIn = defaultBuyIn;
-    this.startTime = new Date(); // 房间创建开始时间
+    this.startTime = new Date();
     this.endTime = null;
+
+    // 锦标赛定时升盲 (每 5 分钟升盲一次)
+    this.blindTimerInterval = null;
+    if (this.gameMode === 'TOURNAMENT') {
+      this.blindLevel = 1;
+      this.blindTimerInterval = setInterval(() => {
+        if (!this.isPaused && !this.isGameEnded) {
+          this.blindLevel++;
+          this.smallBlind = Math.round(this.smallBlind * 1.5);
+          this.bigBlind = this.smallBlind * 2;
+          this.minRaise = this.bigBlind;
+          this.log(`🔔【锦标赛升盲】当前进入第 ${this.blindLevel} 级别，盲注升至: ${this.smallBlind}/${this.bigBlind}`);
+          this.notify();
+        }
+      }, 300000); // 5分钟
+    }
 
     this.seats = new Array(maxSeats).fill(null);
     this.deck = new Deck();
     this.communityCards = [];
     
-    // 专业时间控制：默认 20s，时间银行 300s
     this.defaultActionTime = 20;
     this.actionTimeRemaining = 20;
     this.isUsingTimeBank = false;
     this.timerInterval = null;
     this.autoDealTimer = null;
 
-    // 牌桌状态
     this.stage = 'IDLE';
     this.isPaused = false;
     this.isGameEnded = false;
@@ -358,15 +372,12 @@ class PokerTable {
     this.handCount = 0;
     this.handWinners = [];
 
-    // 猎兔看牌 (Rabbit Hunting)
     this.rabbitCards = [];
     this.rabbitAvailable = false;
     this.lastSurvivorWinnerId = null;
 
-    // 2-7 绝杀
     this.bounty27Winners = [];
 
-    // 累计战绩
     this.playerStatsMap = {};
     this.handHistoryList = [];
 
@@ -378,7 +389,7 @@ class PokerTable {
   notify() { if (this.onStateChange) this.onStateChange(this); }
 
   sitDown(idx, player) {
-    if (this.isGameEnded) return { success: false, msg: '本场比赛已正式结算结束' };
+    if (this.isGameEnded) return { success: false, msg: '本场比赛已结算结束' };
     if (idx < 0 || idx >= this.maxSeats || this.seats[idx] !== null) return { success: false, msg: '座位已占用' };
     const existing = this.seats.find(s => s && s.id === player.id);
     if (existing) return { success: false, msg: '您已在牌桌中' };
@@ -464,13 +475,13 @@ class PokerTable {
 
     if (which === 'left') {
       p.revealedCards[0] = true;
-      this.log(`👀 玩家 [${p.name}] 亮出了左手单张牌: [${p.holeCards[0].toString()}]`);
+      this.log(`👀 玩家 [${p.name}] 亮出左手单张: [${p.holeCards[0].toString()}]`);
     } else if (which === 'right') {
       p.revealedCards[1] = true;
-      this.log(`👀 玩家 [${p.name}] 亮出了右手单张牌: [${p.holeCards[1].toString()}]`);
+      this.log(`👀 玩家 [${p.name}] 亮出右手单张: [${p.holeCards[1].toString()}]`);
     } else {
       p.revealedCards = [true, true];
-      this.log(`👀 玩家 [${p.name}] 秀出了全部底牌: [${p.holeCards[0].toString()} ${p.holeCards[1].toString()}]`);
+      this.log(`👀 玩家 [${p.name}] 秀出双手牌: [${p.holeCards[0].toString()} ${p.holeCards[1].toString()}]`);
     }
     this.notify();
     return { success: true };
@@ -518,7 +529,6 @@ class PokerTable {
     return { success: true, isPaused: this.isPaused };
   }
 
-  // 房主管理：正式结束游戏并生成高保真比赛详情报表
   endGameSession(hostId) {
     if (this.hostId !== hostId) return { success: false, msg: '只有房主可操作' };
     this.isGameEnded = true;
@@ -526,8 +536,8 @@ class PokerTable {
     this.stage = 'GAME_OVER';
     clearInterval(this.timerInterval);
     if (this.autoDealTimer) clearTimeout(this.autoDealTimer);
+    if (this.blindTimerInterval) clearInterval(this.blindTimerInterval);
 
-    // 统计每位选手最终数据
     const playerList = Object.values(this.playerStatsMap).map(p => {
       const liveSeat = this.seats.find(s => s && s.id === p.id);
       const currentChips = liveSeat ? liveSeat.chips : (p.chips || 0);
@@ -545,12 +555,10 @@ class PokerTable {
       };
     }).sort((a, b) => b.netProfit - a.netProfit);
 
-    // 评选三大勋章：MVP、老板、劳模
     let mvpPlayer = playerList[0] || null;
-    let bossPlayer = [...playerList].sort((a, b) => a.netProfit - b.netProfit)[0] || null; // 输最多/贡献最大老板
-    let hardWorkerPlayer = [...playerList].sort((a, b) => b.played - a.played)[0] || null; // 打手数最多劳模
+    let bossPlayer = [...playerList].sort((a, b) => a.netProfit - b.netProfit)[0] || null;
+    let hardWorkerPlayer = [...playerList].sort((a, b) => b.played - a.played)[0] || null;
 
-    // 时长计算
     const durationMs = this.endTime - this.startTime;
     const durationHours = Math.floor(durationMs / 3600000);
     const durationMinutes = Math.floor((durationMs % 3600000) / 60000);
@@ -981,6 +989,7 @@ class PokerTable {
       hostId: this.hostId,
       hostName: this.hostName,
       name: this.name,
+      gameMode: this.gameMode,
       isHost: isHost,
       isPaused: this.isPaused,
       isGameEnded: this.isGameEnded,
@@ -1033,14 +1042,15 @@ class PokerTable {
   }
 }
 
-// ================= Socket.io 房间管理 =================
+// ================= Socket.io 房间管理 (纯 4 位数字房间码) =================
 const rooms = new Map();
 
-function generateRoomId() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let res = '';
-  for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
-  return res;
+function generate4DigitRoomId() {
+  let code = '';
+  do {
+    code = Math.floor(1000 + Math.random() * 9000).toString(); // 1000 ~ 9999 纯 4 位数字
+  } while (rooms.has(code));
+  return code;
 }
 
 io.on('connection', socket => {
@@ -1073,8 +1083,9 @@ io.on('connection', socket => {
     }
   }
 
+  // 创建房间 (纯 4 位数字房号)
   socket.on('create_room', (options, callback) => {
-    const roomId = generateRoomId();
+    const roomId = generate4DigitRoomId();
     const table = new PokerTable({
       id: roomId,
       hostId: options.playerId,
@@ -1089,20 +1100,29 @@ io.on('connection', socket => {
     };
     table.onLog = msg => io.to(roomId).emit('game_log', { message: msg });
 
+    // 如果是单人练习赛 (PVE)，自动加满 9 个 AI 陪练
+    if (options.gameMode === 'PVE') {
+      table.sitDown(0, { id: options.playerId, name: options.hostName || '扑克之王', chips: 1000 });
+      for (let i = 1; i < 10; i++) {
+        table.sitDown(i, { id: `bot_${i}`, name: BOT_NAMES[i - 1], isBot: true, chips: 1000 });
+      }
+    }
+
     rooms.set(roomId, { table, hostId: options.playerId });
     socket.join(roomId);
     currentRoomId = roomId;
     currentPlayerId = options.playerId;
     socket.data.playerId = options.playerId;
 
-    callback({ success: true, roomId, roomName: table.name });
+    callback({ success: true, roomId, roomName: table.name, gameMode: table.gameMode });
   });
 
   socket.on('join_room', ({ roomId, player }, callback) => {
-    const room = rooms.get(roomId.toUpperCase());
-    if (!room) return callback({ success: false, msg: '房间号不存在' });
+    const cleanRoomId = roomId.toString().trim();
+    const room = rooms.get(cleanRoomId);
+    if (!room) return callback({ success: false, msg: '4 位数字房间号不存在' });
 
-    currentRoomId = roomId.toUpperCase();
+    currentRoomId = cleanRoomId;
     currentPlayerId = player.id;
     socket.data.playerId = player.id;
     socket.join(currentRoomId);
