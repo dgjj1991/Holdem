@@ -45,13 +45,13 @@
     .font-poker { font-family: 'Cinzel', serif; }
     .font-mono-code { font-family: 'JetBrains Mono', monospace; }
 
-    /* 1:1 德扑之星原版深蓝灰哑光质感桌面 */
-    .dpzx-table-bg {
+    /* 菠萝竞技场深蓝灰哑光质感桌面 */
+    .bl-arena-table-bg {
       background: radial-gradient(circle at 50% 45%, #24415a 0%, #1a3043 55%, #101e2c 100%);
     }
 
-    /* 1:1 原版空座矩形 */
-    .dpzx-empty-seat {
+    /* 空座矩形 */
+    .bl-arena-empty-seat {
       width: 52px;
       height: 52px;
       background-color: rgba(18, 35, 50, 0.65);
@@ -67,15 +67,15 @@
       transition: all 0.15s ease;
       box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4);
     }
-    .dpzx-empty-seat:active {
+    .bl-arena-empty-seat:active {
       transform: scale(0.95);
       background-color: rgba(25, 50, 75, 0.85);
       border-color: #f59e0b;
       color: #fcd34d;
     }
 
-    /* 1:1 原版就座玩家卡片 (头像 + 底部嵌合记分牌条) */
-    .dpzx-player-card {
+    /* 就座玩家卡片 (头像 + 底部嵌合记分牌条) */
+    .bl-arena-player-card {
       width: 54px;
       height: 54px;
       border-radius: 10px;
@@ -85,7 +85,7 @@
       background-color: #1b2d3e;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     }
-    .dpzx-player-chip-bar {
+    .bl-arena-player-chip-bar {
       position: absolute;
       bottom: 0;
       left: 0;
@@ -105,11 +105,11 @@
       0%, 100% { border-color: #22c55e; box-shadow: 0 0 12px rgba(34, 197, 94, 0.9); }
       50% { border-color: #4ade80; box-shadow: 0 0 20px rgba(74, 222, 128, 1); }
     }
-    .dpzx-acting-card {
+    .bl-arena-acting-card {
       animation: actor-green-pulse 1.2s infinite ease-in-out;
       border: 2px solid #22c55e !important;
     }
-    .dpzx-acting-overlay {
+    .bl-arena-acting-overlay {
       position: absolute;
       inset: 0;
       background: rgba(0, 0, 0, 0.55);
@@ -124,7 +124,7 @@
       z-index: 10;
     }
 
-    /* 1:1 德扑之星罗盘核心操作大圆钮 */
+    /* 罗盘核心操作大圆钮 */
     .btn-action-circle-fold {
       width: 58px;
       height: 58px;
@@ -336,8 +336,8 @@
     </div>
   </header>
 
-  <!-- ================= 主对局区 (1:1 德扑之星 9 人专业环形对坐) ================= -->
-  <main class="flex-1 relative w-full h-[calc(100vh-95px)] dpzx-table-bg flex flex-col justify-between overflow-hidden">
+  <!-- ================= 菠萝竞技场 9 人专业环形对坐主对局区 ================= -->
+  <main class="flex-1 relative w-full h-[calc(100vh-95px)] bl-arena-table-bg flex flex-col justify-between overflow-hidden">
     
     <!-- 中央公共区域 (底池胶囊 + 5 张四色公共牌 + 经典水印) -->
     <div class="relative flex-1 flex flex-col items-center justify-center -mt-6 pointer-events-none">
