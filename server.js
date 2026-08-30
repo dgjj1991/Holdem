@@ -214,6 +214,25 @@ function evaluateHand(cards) {
   return best;
 }
 
+// 实时牌型说明计算 (从 Preflop 到 River 全程实时分析)
+function getHandDescription(holeCards, communityCards = []) {
+  if (!holeCards || holeCards.length < 2) return '';
+  const validHoles = holeCards.filter(c => c && c.rank);
+  if (validHoles.length < 2) return '';
+
+  const validCommunity = communityCards.filter(c => c && c.rank);
+  const all = [...validHoles, ...validCommunity];
+  if (all.length >= 5) {
+    const evalRes = evaluateHand(all);
+    return evalRes.description || evalRes.type.name;
+  }
+  if (validHoles[0].rank === validHoles[1].rank) {
+    return `一对 (${RANK_NAMES[validHoles[0].rank]})`;
+  }
+  const maxR = Math.max(validHoles[0].rank, validHoles[1].rank);
+  return `高牌 (${RANK_NAMES[maxR]}高)`;
+}
+
 // 蒙特卡洛/全排列实时胜率计算器 (All-in Equity Calculator)
 function calculateAllInEquities(playersInAllIn, communityCards, deckCards) {
   const remainingNeed = 5 - communityCards.length;
@@ -1171,6 +1190,10 @@ class PokerTable {
         const canRevealLeft = isSelf || (p.revealedCards && p.revealedCards[0]) || (isShowdown && !p.folded) || isAllInRunout || isWinnerAtEnd;
         const canRevealRight = isSelf || (p.revealedCards && p.revealedCards[1]) || (isShowdown && !p.folded) || isAllInRunout || isWinnerAtEnd;
 
+        const realHandDesc = (isSelf || isShowdown || isWinnerAtEnd)
+          ? getHandDescription(p.holeCards, this.communityCards)
+          : '';
+
         return {
           seatIndex: idx,
           id: p.id,
@@ -1189,7 +1212,7 @@ class PokerTable {
           timeBank: p.timeBank,
           autoMuck: p.autoMuck,
           lastAction: p.lastAction,
-          handDescription: (isSelf || isShowdown || isWinnerAtEnd) ? (p.bestHand ? p.bestHand.description : '') : '',
+          handDescription: realHandDesc,
           is27: isSelf ? p.is27Hand : false,
           revealedCards: p.revealedCards,
           holeCards: [

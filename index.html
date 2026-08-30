@@ -1930,9 +1930,11 @@
                           </div>
                         `).join('')}
                       </div>
-                      <div class="text-[9px] font-black ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'text-amber-400 font-extrabold' : 'text-slate-300'} mt-0.5">
-                        ${p.handDescription || '高牌'}
-                      </div>
+                      ${p.handDescription ? `
+                        <div class="text-[9px] font-extrabold ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'text-amber-300 bg-amber-950/80 border-amber-500/50' : 'text-slate-200 bg-slate-900/90 border-slate-700/60'} px-2 py-0.2 rounded-full border mt-0.5 shadow select-none">
+                          ${p.handDescription}
+                        </div>
+                      ` : ''}
                     </div>
                   ` : ''}
 
@@ -1949,7 +1951,7 @@
             `;
           } else {
             sHtml += `
-              <div onclick="app.sitDownAtSeat(${i})" class="dpzx-empty-seat absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto" style="top: ${coord.top}; left: ${coord.left};">
+              <div onclick="app.sitDownAtSeat(${i})" class="bl-arena-empty-seat absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto" style="top: ${coord.top}; left: ${coord.left};">
                 空座
               </div>
             `;
