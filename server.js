@@ -1387,38 +1387,44 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const rooms = new Map();
 
+let saveDiskTimer = null;
 function saveRoomsToDisk() {
-  try {
-    const data = {};
-    for (const [roomId, room] of rooms.entries()) {
-      if (room.table && !room.table.isGameEnded) {
-        data[roomId] = {
-          id: room.table.id,
-          hostId: room.hostId,
-          hostName: room.table.hostName,
-          name: room.table.name,
-          gameMode: room.table.gameMode,
-          smallBlind: room.table.smallBlind,
-          bigBlind: room.table.bigBlind,
-          defaultBuyIn: room.table.defaultBuyIn,
-          durationMinutes: room.table.durationMinutes,
-          expireTimestamp: room.table.expireTimestamp,
-          handCount: room.table.handCount,
-          playerStatsMap: room.table.playerStatsMap,
-          handHistoryList: room.table.handHistoryList,
-          seats: room.table.seats.map(s => s ? {
-            id: s.id,
-            name: s.name,
-            avatar: s.avatar,
-            chips: s.chips,
-            isBot: s.isBot,
-            sittingOut: true
-          } : null)
-        };
+  if (saveDiskTimer) return;
+  saveDiskTimer = setTimeout(() => {
+    saveDiskTimer = null;
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+      const data = {};
+      for (const [roomId, room] of rooms.entries()) {
+        if (room && room.table && !room.table.isGameEnded) {
+          data[roomId] = {
+            id: room.table.id,
+            hostId: room.hostId,
+            hostName: room.table.hostName,
+            name: room.table.name,
+            gameMode: room.table.gameMode,
+            smallBlind: room.table.smallBlind,
+            bigBlind: room.table.bigBlind,
+            defaultBuyIn: room.table.defaultBuyIn,
+            durationMinutes: room.table.durationMinutes,
+            expireTimestamp: room.table.expireTimestamp,
+            handCount: room.table.handCount,
+            playerStatsMap: room.table.playerStatsMap,
+            handHistoryList: room.table.handHistoryList,
+            seats: room.table.seats.map(s => s ? {
+              id: s.id,
+              name: s.name,
+              avatar: s.avatar,
+              chips: s.chips,
+              isBot: s.isBot,
+              sittingOut: true
+            } : null)
+          };
+        }
       }
-    }
-    fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) {}
+      fs.writeFile(STORE_FILE, JSON.stringify(data), 'utf8', () => {});
+    } catch (e) {}
+  }, 2000);
 }
 
 function restoreRoomsFromDisk() {

@@ -1626,7 +1626,7 @@
           let list = JSON.parse(localStorage.getItem('poker_recent_rooms') || '[]');
           list = list.filter(r => r && r.id !== roomId);
           localStorage.setItem('poker_recent_rooms', JSON.stringify(list));
-          this.renderRecentRooms();
+          this.drawRecentRoomsList(list);
         } catch (e) {}
       }
 
