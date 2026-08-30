@@ -288,6 +288,8 @@ class PotManager {
     const levels = Array.from(new Set(active.map(p => p.totalBet))).sort((a, b) => a - b);
     const pots = [];
     let processed = 0;
+    let accumulatedDeadMoney = 0;
+
     for (const lvl of levels) {
       if (lvl <= processed) continue;
       const inc = lvl - processed;
@@ -299,7 +301,16 @@ class PotManager {
           if (!p.folded) elig.push(p.id);
         }
       }
-      if (amt > 0 && elig.length > 0) pots.push({ amount: amt, eligiblePlayerIds: elig });
+      if (elig.length > 0) {
+        pots.push({ amount: amt + accumulatedDeadMoney, eligiblePlayerIds: elig });
+        accumulatedDeadMoney = 0;
+      } else {
+        if (pots.length > 0) {
+          pots[pots.length - 1].amount += amt;
+        } else {
+          accumulatedDeadMoney += amt;
+        }
+      }
       processed = lvl;
     }
     return pots;
