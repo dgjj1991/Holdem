@@ -63,7 +63,7 @@
       color: #fcd34d;
     }
 
-    /* 1:1 原版就座玩家卡片 (头像 + 底部嵌合筹码条) */
+    /* 1:1 原版就座玩家卡片 (头像 + 底部嵌合记分牌条) */
     .dpzx-player-card {
       width: 52px;
       height: 52px;
@@ -150,6 +150,13 @@
     }
     .action-drawer-hidden { transform: translateY(120%); opacity: 0; pointer-events: none; }
     .action-drawer-visible { transform: translateY(0%); opacity: 1; pointer-events: auto; }
+
+    /* 左侧牌型提示抽屉 */
+    .drawer-left {
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-left-hidden { transform: translateX(-100%); }
+    .drawer-left-visible { transform: translateX(0%); }
 
     /* 弹幕动画 */
     @keyframes danmaku-slide {
@@ -277,14 +284,14 @@
     <div class="grid grid-cols-4 gap-2">
       <!-- 第一行 -->
       <button onclick="app.openSettingsModal(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">桌面设置</button>
-      <button onclick="app.toggleSitOut(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">提前离开</button>
+      <button onclick="app.toggleLeaveNextHand(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">提前离开</button>
       <button onclick="app.openBuyInModal(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">带入记分牌</button>
-      <button onclick="app.toggleStatsModal(true); app.toggleMenuGrid(false);" class="dpzx-menu-btn">比赛设置</button>
+      <button onclick="app.openMatchRulesModal(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">比赛设置</button>
       <!-- 第二行 -->
       <button onclick="app.openHandRanksModal(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">牌型提示</button>
       <button onclick="app.toggleSitOut(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">保位离座</button>
       <button onclick="app.openParachuteModal(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">降落伞说明</button>
-      <button onclick="app.standUp(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">退出比赛</button>
+      <button onclick="app.confirmExitGame(); app.toggleMenuGrid(false);" class="dpzx-menu-btn">退出比赛</button>
     </div>
   </div>
 
@@ -297,7 +304,7 @@
         <i data-lucide="layout-grid" class="w-6 h-6 stroke-[2.2]"></i>
       </button>
 
-      <button onclick="app.standUp()" class="p-1 text-amber-400 hover:text-amber-300 transition active:scale-95 flex flex-col items-center">
+      <button onclick="app.confirmExitGame()" class="p-1 text-amber-400 hover:text-amber-300 transition active:scale-95 flex flex-col items-center">
         <i data-lucide="log-out" class="w-6 h-6 stroke-[2.2]"></i>
       </button>
     </div>
@@ -319,10 +326,9 @@
   <!-- ================= 🎯 核心行动弹出抽屉 (轮到自己时升起) ================= -->
   <div id="action-drawer" class="action-drawer action-drawer-hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-2xl border-t border-amber-500/40 p-3 md:p-4 shadow-2xl space-y-2">
     
-    <!-- 展开的加注滑动条与快捷比例预设 -->
     <div id="raise-drawer-panel" class="hidden space-y-2 bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
       <div class="flex items-center justify-between text-xs px-1">
-        <span class="text-slate-400 font-semibold">加注目标金额:</span>
+        <span class="text-slate-400 font-semibold">加注记分牌:</span>
         <span id="drawer-bet-val" class="font-mono-code font-black text-amber-400 text-sm">40 🪙</span>
       </div>
       <input type="range" id="drawer-bet-slider" min="20" max="1000" step="10" value="40" oninput="app.onSliderChange(this.value)" class="w-full cursor-pointer h-2 bg-slate-800 rounded-lg">
@@ -339,24 +345,20 @@
 
     <!-- 三大核心大按钮 -->
     <div class="grid grid-cols-3 gap-2">
-      <!-- 弃牌 -->
       <button onclick="app.performAction('fold')" class="py-3 rounded-2xl bg-rose-600/30 hover:bg-rose-600 border border-rose-500/50 text-rose-300 hover:text-white font-extrabold text-sm transition active:scale-95 flex flex-col items-center justify-center">
         <span>弃牌</span>
         <span class="text-[10px] font-normal opacity-80">Fold</span>
       </button>
 
-      <!-- 过牌 / 跟注 -->
       <button id="btn-drawer-check-call" onclick="app.performAction('call')" class="py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm transition active:scale-95 shadow-lg shadow-emerald-600/40 flex flex-col items-center justify-center">
         <span id="drawer-call-label">过牌 (Check)</span>
       </button>
 
-      <!-- 加注 -->
       <button id="btn-drawer-raise" onclick="app.toggleRaisePanel()" class="py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition active:scale-95 shadow-lg shadow-amber-500/40 flex flex-col items-center justify-center">
         <span id="drawer-raise-label">加注</span>
       </button>
     </div>
 
-    <!-- 免费加时 +30s -->
     <div class="flex items-center justify-between text-[11px] px-1 text-slate-400 pt-0.5">
       <button onclick="app.requestExtraTime()" class="text-indigo-400 font-bold hover:underline flex items-center gap-1">
         <i data-lucide="clock" class="w-3.5 h-3.5"></i>
@@ -365,6 +367,280 @@
       <div class="text-slate-500 font-mono-code">Time Bank: <span id="drawer-time-bank" class="text-slate-300">300</span>s</div>
     </div>
 
+  </div>
+
+  <!-- ================= 1:1 原版左侧【牌型提示】滑出抽屉 ================= -->
+  <div id="drawer-hand-ranks" class="drawer-left drawer-left-hidden fixed inset-y-0 left-0 w-72 bg-[#122030]/95 backdrop-blur-xl border-r border-slate-700/60 z-50 p-4 flex flex-col justify-between shadow-2xl">
+    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+      <h3 class="text-base font-bold text-white tracking-wide">牌型提示</h3>
+      <button onclick="app.closeHandRanksModal()" class="text-slate-400 hover:text-white p-1">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-2 space-y-3 pr-1 text-xs">
+      
+      <!-- 皇家同花顺 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">K♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">Q♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">J♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♥</span>
+        </div>
+        <span class="text-slate-200 font-bold">皇家同花顺</span>
+      </div>
+
+      <!-- 同花顺 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">6♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">7♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">8♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">9♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♥</span>
+        </div>
+        <span class="text-slate-200 font-bold">同花顺</span>
+      </div>
+
+      <!-- 四条(金刚) -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
+          <span class="w-5 h-7 rounded bg-white text-emerald-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♣</span>
+          <span class="w-5 h-7 rounded bg-white text-blue-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♦</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♥</span>
+        </div>
+        <span class="text-slate-200 font-bold">四条(金刚)</span>
+      </div>
+
+      <!-- 葫芦 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
+          <span class="w-5 h-7 rounded bg-white text-emerald-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♣</span>
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♥</span>
+        </div>
+        <span class="text-slate-200 font-bold">葫芦</span>
+      </div>
+
+      <!-- 同花 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">K♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">J♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">9♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">6♥</span>
+        </div>
+        <span class="text-slate-200 font-bold">同花</span>
+      </div>
+
+      <!-- 顺子 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">9♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">8♥</span>
+          <span class="w-5 h-7 rounded bg-white text-emerald-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">7♣</span>
+          <span class="w-5 h-7 rounded bg-white text-blue-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">6♦</span>
+        </div>
+        <span class="text-slate-200 font-bold">顺子</span>
+      </div>
+
+      <!-- 三条 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
+          <span class="w-5 h-7 rounded bg-white text-emerald-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♣</span>
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">9♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">6♥</span>
+        </div>
+        <span class="text-slate-200 font-bold">三条</span>
+      </div>
+
+      <!-- 两对 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">K♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">K♥</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">10♥</span>
+        </div>
+        <span class="text-slate-200 font-bold">两对</span>
+      </div>
+
+      <!-- 一对 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♥</span>
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">9♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">6♥</span>
+          <span class="w-5 h-7 rounded bg-white text-emerald-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">J♣</span>
+        </div>
+        <span class="text-slate-200 font-bold">一对</span>
+      </div>
+
+      <!-- 高牌 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="w-5 h-7 rounded bg-white text-slate-950 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">A♠</span>
+          <span class="w-5 h-7 rounded bg-white text-red-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">J♥</span>
+          <span class="w-5 h-7 rounded bg-white text-emerald-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">9♣</span>
+          <span class="w-5 h-7 rounded bg-white text-blue-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">6♦</span>
+          <span class="w-5 h-7 rounded bg-white text-blue-600 font-bold flex flex-col items-center justify-center shadow text-[10px] leading-tight">8♦</span>
+        </div>
+        <span class="text-slate-200 font-bold">高牌</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 1：【带入记分牌】弹窗 ================= -->
+  <div id="modal-buy-in" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="coins" class="w-5 h-5 text-amber-400"></i>
+          <span>带入记分牌 (筹码)</span>
+        </h3>
+        <button onclick="document.getElementById('modal-buy-in').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700/60 flex items-center justify-between text-xs">
+          <span class="text-slate-400">当前持有记分牌:</span>
+          <span id="buyin-current-chips" class="font-mono-code font-black text-amber-400 text-sm">1,000 🪙</span>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-300 font-medium">补充记分牌数量:</span>
+            <span id="buyin-slider-val" class="font-mono-code font-black text-emerald-400 text-sm">1,000 🪙</span>
+          </div>
+          <input type="range" id="buyin-slider" min="200" max="5000" step="100" value="1000" oninput="document.getElementById('buyin-slider-val').innerText = this.value + ' 🪙'" class="w-full h-2 bg-slate-800 rounded-lg">
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono-code">
+            <span>200 (10BB)</span>
+            <span>2000 (100BB)</span>
+            <span>5000 (250BB)</span>
+          </div>
+        </div>
+
+        <button onclick="app.submitBuyIn()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-extrabold text-xs shadow transition">
+          立即确认补充记分牌
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 2：【桌面设置】弹窗 ================= -->
+  <div id="modal-settings" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="settings" class="w-5 h-5 text-amber-400"></i>
+          <span>桌面设置</span>
+        </h3>
+        <button onclick="document.getElementById('modal-settings').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2.5 text-xs text-slate-300">
+        <div class="flex items-center justify-between p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
+          <div>
+            <div class="font-bold text-white">四色扑克牌</div>
+            <div class="text-[10px] text-slate-400">黑桃黑、红桃红、草花绿、方块蓝</div>
+          </div>
+          <input type="checkbox" checked class="accent-amber-400 w-4 h-4">
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
+          <div>
+            <div class="font-bold text-white">自动埋牌 (Auto Muck)</div>
+            <div class="text-[10px] text-slate-400">摊牌输牌时自动隐藏手牌</div>
+          </div>
+          <input type="checkbox" checked class="accent-amber-400 w-4 h-4">
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
+          <div>
+            <div class="font-bold text-white">声音音效</div>
+            <div class="text-[10px] text-slate-400">发牌、加注、All-in 专属音效</div>
+          </div>
+          <input type="checkbox" checked class="accent-amber-400 w-4 h-4">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 3：【比赛设置 / 规则】弹窗 ================= -->
+  <div id="modal-match-rules" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-blue-400"></i>
+          <span>比赛设置与规则</span>
+        </h3>
+        <button onclick="document.getElementById('modal-match-rules').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2 text-xs text-slate-300">
+        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
+          <span class="text-slate-400">盲注结构</span>
+          <span class="font-bold text-amber-300">10 / 20 (前注 0)</span>
+        </div>
+        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
+          <span class="text-slate-400">思考倒计时</span>
+          <span class="font-bold text-slate-200">20 秒 / 轮</span>
+        </div>
+        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
+          <span class="text-slate-400">免费加时</span>
+          <span class="font-bold text-emerald-400">+30 秒 / 次</span>
+        </div>
+        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
+          <span class="text-slate-400">时间银行 (Time Bank)</span>
+          <span class="font-bold text-indigo-400">300 秒储备</span>
+        </div>
+        <div class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/60 flex justify-between">
+          <span class="text-slate-400">2-7 绝杀炸场</span>
+          <span class="font-bold text-amber-400">开启</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 4：【降落伞说明】弹窗 ================= -->
+  <div id="modal-parachute" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="shield" class="w-5 h-5 text-teal-400"></i>
+          <span>降落伞 (跑马) 说明</span>
+        </h3>
+        <button onclick="document.getElementById('modal-parachute').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2.5 text-xs text-slate-300 leading-relaxed">
+        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60 space-y-1">
+          <div class="font-bold text-amber-400">什么是降落伞机制？</div>
+          <div>当有玩家全下 (All-in) 并且无后续行动时，系统支持自动多次发公共牌（跑马），平滑方差，避免因单次运气波动导致筹码清空。</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ================= 弹窗 A：双重邀请好友专属弹窗 ================= -->
@@ -410,7 +686,7 @@
       </div>
 
       <div class="rounded-2xl p-4 shadow-lg space-y-3 text-slate-300 border border-blue-900/40" style="background: linear-gradient(180deg, #132442 0%, #0d1a33 100%);">
-        <div id="summary-room-title" class="text-lg font-black text-white tracking-wide">无财便是德</div>
+        <div id="summary-room-title" class="text-lg font-black text-white tracking-wide">poker</div>
         
         <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-700/40">
           <div>
@@ -423,7 +699,7 @@
           </div>
           <div>
             <div class="text-[11px] text-slate-400">创建者</div>
-            <div id="summary-host-name" class="text-xs font-extrabold text-white mt-0.5">阿庞</div>
+            <div id="summary-host-name" class="text-xs font-extrabold text-white mt-0.5">菠萝无敌</div>
           </div>
         </div>
 
@@ -539,11 +815,11 @@
       <div id="panel-ai" class="hidden space-y-3">
         <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1 leading-relaxed">
           <div class="font-bold text-emerald-400 flex items-center gap-1"><i data-lucide="bot" class="w-3.5 h-3.5"></i> 单人 AI 陪练房：</div>
-          <div>系统为您安排 9 名具备紧凶、松凶不同风格的 AI 高手同台对练，即开即打！</div>
+          <div>系统为您安排 8 名具备紧凶、松凶不同风格的 AI 高手同台对练，即开即打！</div>
         </div>
 
         <button onclick="app.createOnlineRoom('PVE')" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow transition">
-          进入 9 AI 练习赛 (即开即玩)
+          进入 9 人 AI 练习赛 (即开即玩)
         </button>
       </div>
 
@@ -557,7 +833,6 @@
         this.socket = null;
         this.tableState = null;
         this.currentBetSliderValue = 40;
-        this.preAction = null;
         this.lastSummaryData = null;
         this.isRaisePanelOpen = false;
         this.isMenuGridOpen = false;
@@ -653,6 +928,56 @@
         this.isMenuGridOpen = force !== undefined ? force : !this.isMenuGridOpen;
         if (this.isMenuGridOpen) p.classList.remove('hidden');
         else p.classList.add('hidden');
+      }
+
+      // 8大菜单真实弹窗逻辑
+      openHandRanksModal() {
+        document.getElementById('drawer-hand-ranks').classList.remove('drawer-left-hidden');
+        document.getElementById('drawer-hand-ranks').classList.add('drawer-left-visible');
+      }
+      closeHandRanksModal() {
+        document.getElementById('drawer-hand-ranks').classList.remove('drawer-left-visible');
+        document.getElementById('drawer-hand-ranks').classList.add('drawer-left-hidden');
+      }
+
+      openBuyInModal() {
+        const mySeat = this.tableState ? this.tableState.seats.find(s => s && s.id === this.playerId) : null;
+        const chips = mySeat ? mySeat.chips : 1000;
+        document.getElementById('buyin-current-chips').innerText = `${chips.toLocaleString()} 🪙`;
+        document.getElementById('modal-buy-in').classList.remove('hidden');
+      }
+
+      submitBuyIn() {
+        const val = parseInt(document.getElementById('buyin-slider').value, 10);
+        if (this.socket) {
+          this.socket.emit('buy_in_chips', { amount: val }, (res) => {
+            if (res && res.success) {
+              this.showToast(`成功补充带入 ${val} 记分牌！`, 'success');
+              document.getElementById('modal-buy-in').classList.add('hidden');
+            } else this.showToast(res ? res.msg : '补充记分牌失败', 'error');
+          });
+        }
+      }
+
+      openSettingsModal() { document.getElementById('modal-settings').classList.remove('hidden'); }
+      openMatchRulesModal() { document.getElementById('modal-match-rules').classList.remove('hidden'); }
+      openParachuteModal() { document.getElementById('modal-parachute').classList.remove('hidden'); }
+
+      toggleLeaveNextHand() {
+        if (this.socket) {
+          this.socket.emit('toggle_leave_next_hand', (res) => {
+            if (res && res.success) {
+              this.showToast(res.leaveNextHand ? '已设置：本局结束后自动离开' : '已取消提前离开', 'info');
+            }
+          });
+        }
+      }
+
+      confirmExitGame() {
+        if (confirm('确认退出当前比赛并返回大厅吗？')) {
+          this.standUp();
+          this.showLobbyModal();
+        }
       }
 
       toggleMic() {
@@ -811,10 +1136,13 @@
         if (!this.tableState) return;
         const mySeat = this.tableState.seats.find(s => s && s.id === this.playerId);
         if (!mySeat) return;
-        if (this.socket) this.socket.emit('toggle_sit_out', { sittingOut: !mySeat.sittingOut }, () => {});
+        if (this.socket) {
+          this.socket.emit('toggle_sit_out', { sittingOut: !mySeat.sittingOut }, (res) => {
+            if (res && res.success) this.showToast(res.sittingOut ? '已保位离座' : '已回到座位', 'info');
+          });
+        }
       }
 
-      // 核心下注行动，收到确认后才收起抽屉
       performAction(act) {
         if (!this.socket) return;
         const amount = this.currentBetSliderValue;
@@ -970,19 +1298,23 @@
 
                 <div class="relative flex items-center justify-center">
                   
-                  <!-- 左侧行动/状态气泡 (如 等待/跟注) -->
+                  <!-- 左侧行动/状态气泡 -->
                   ${p.lastAction ? `
                     <div class="absolute -left-9 z-20 px-1 py-0.2 rounded bg-slate-200 text-slate-950 text-[9px] font-extrabold shadow">
                       ${p.lastAction.split(' ')[0]}
+                    </div>
+                  ` : (p.sittingOut ? `
+                    <div class="absolute -left-9 z-20 px-1 py-0.2 rounded bg-amber-500 text-slate-950 text-[9px] font-bold shadow">
+                      暂离
                     </div>
                   ` : (state.stage === 'IDLE' ? `
                     <div class="absolute -left-9 z-20 px-1 py-0.2 rounded bg-slate-200/90 text-slate-950 text-[9px] font-bold shadow">
                       等待
                     </div>
-                  ` : '')}
+                  ` : ''))}
 
-                  <!-- 1:1 原版头像 + 嵌合筹码条 -->
-                  <div class="dpzx-player-card ${isActor ? 'dpzx-acting' : ''} ${p.folded ? 'opacity-30 grayscale' : ''}">
+                  <!-- 1:1 原版头像 + 嵌合记分牌条 -->
+                  <div class="dpzx-player-card ${isActor ? 'dpzx-acting' : ''} ${p.folded || p.sittingOut ? 'opacity-30 grayscale' : ''}">
                     <img src="${p.avatar}" class="w-full h-full object-cover">
                     <div class="dpzx-player-chip-bar">${p.chips.toLocaleString()}</div>
                   </div>
@@ -1010,7 +1342,7 @@
                   </div>
                 ` : ''}
 
-                <!-- 下注筹码数值 -->
+                <!-- 下注记分牌数值 -->
                 ${p.currentRoundBet > 0 ? `
                   <div class="mt-0.5 px-1.5 py-0.2 rounded-full bg-emerald-950/90 border border-emerald-500/40 text-[9px] font-mono-code font-bold text-emerald-300 shadow">
                     🪙 ${p.currentRoundBet}
@@ -1068,7 +1400,7 @@
         document.getElementById('summary-room-title').innerText = summary.roomName || 'poker';
         document.getElementById('summary-blind-info').innerText = summary.blindInfo || '10/20(0)';
         document.getElementById('summary-hand-count').innerText = summary.handCount || 0;
-        document.getElementById('summary-host-name').innerText = summary.hostName || '阿庞';
+        document.getElementById('summary-host-name').innerText = summary.hostName || '菠萝无敌';
 
         if (summary.mvp) {
           document.getElementById('badge-mvp-name').innerText = summary.mvp.name;
