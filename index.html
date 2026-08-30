@@ -375,6 +375,23 @@
   <!-- ================= 🎯 核心行动弹出抽屉 (轮到自己时升起) ================= -->
   <div id="action-drawer" class="action-drawer action-drawer-hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-2xl border-t border-amber-500/40 p-3 md:p-4 shadow-2xl space-y-2">
     
+    <!-- 🎴 抽屉顶部手牌与当前牌型高亮条 (解决下注时看不到手牌的问题) -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-2 flex items-center justify-between shadow-inner">
+      <div class="flex items-center gap-2.5">
+        <div id="drawer-hole-cards" class="flex items-center gap-1.5">
+          <!-- 动态渲染手牌 -->
+        </div>
+        <div class="flex flex-col">
+          <div class="text-[10px] text-slate-400 font-semibold">您的手牌 · 牌型</div>
+          <div id="drawer-hand-desc" class="text-xs font-bold text-amber-300 truncate max-w-[150px]">等待发牌</div>
+        </div>
+      </div>
+      <div class="text-right">
+        <div class="text-[10px] text-slate-400">持有记分牌</div>
+        <div id="drawer-my-chips" class="font-mono-code font-black text-emerald-400 text-xs">1,000 🪙</div>
+      </div>
+    </div>
+
     <div id="raise-drawer-panel" class="hidden space-y-2 bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
       <div class="flex items-center justify-between text-xs px-1">
         <span class="text-slate-400 font-semibold">加注记分牌:</span>
@@ -1503,6 +1520,22 @@
       showActionDrawer(state, mySeat) {
         const drawer = document.getElementById('action-drawer');
         drawer.className = 'action-drawer action-drawer-visible fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-2xl border-t border-amber-500/40 p-3 md:p-4 shadow-2xl space-y-2';
+
+        // 动态填充手牌、牌型与持有记分牌
+        const holeBox = document.getElementById('drawer-hole-cards');
+        if (mySeat && mySeat.holeCards && mySeat.holeCards.length >= 2) {
+          holeBox.innerHTML = mySeat.holeCards.map(c => `
+            <div class="w-8 h-12 bg-white rounded shadow-md border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} select-none">
+              <div class="text-[9px] leading-none font-mono-code">${c.label}</div>
+              <div class="text-xs text-center leading-none">${c.symbol}</div>
+              <div class="text-[9px] leading-none text-right font-mono-code">${c.label}</div>
+            </div>
+          `).join('');
+        } else {
+          holeBox.innerHTML = '<div class="text-xs text-slate-500">无手牌</div>';
+        }
+        document.getElementById('drawer-hand-desc').innerText = mySeat.handDescription || '高牌';
+        document.getElementById('drawer-my-chips').innerText = `${this.formatChips(mySeat.chips, state.bigBlind)} 🪙`;
 
         const toCall = state.currentBet - mySeat.currentRoundBet;
         document.getElementById('drawer-call-label').innerText = toCall === 0 ? '过牌 (Check)' : `跟注 ${Math.min(toCall, mySeat.chips)}`;
