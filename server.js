@@ -817,6 +817,7 @@ class PokerTable {
     this.pot = 0;
     this.deck.reset();
     this.deck.shuffle();
+    this.handActionMap = {};
 
     this.seats.forEach(p => {
       if (p) {
@@ -878,6 +879,17 @@ class PokerTable {
     return n;
   }
 
+  recordPlayerStageAction(playerId, stage, code, label, amount) {
+    if (!this.handActionMap) this.handActionMap = {};
+    if (!this.handActionMap[playerId]) {
+      this.handActionMap[playerId] = { preflop: [], flop: [], turn: [], river: [] };
+    }
+    const stageKey = (stage || 'preflop').toLowerCase();
+    if (this.handActionMap[playerId][stageKey]) {
+      this.handActionMap[playerId][stageKey].push({ code, label, amount: amount || 0 });
+    }
+  }
+
   postBlinds() {
     const active = this.getActiveSeats();
     if (active.length === 2) {
@@ -895,11 +907,13 @@ class PokerTable {
     sb.chips -= sbAmt; sb.currentRoundBet = sbAmt; sb.totalBet = sbAmt;
     if (sb.chips === 0) sb.allIn = true;
     sb.lastAction = `小盲 ${sbAmt}`;
+    this.recordPlayerStageAction(sb.id, 'preflop', 'SB', `小盲 ${sbAmt}`, sbAmt);
 
     const bbAmt = Math.min(this.bigBlind, bb.chips);
     bb.chips -= bbAmt; bb.currentRoundBet = bbAmt; bb.totalBet = bbAmt;
     if (bb.chips === 0) bb.allIn = true;
     bb.lastAction = `大盲 ${bbAmt}`;
+    this.recordPlayerStageAction(bb.id, 'preflop', 'BB', `大盲 ${bbAmt}`, bbAmt);
 
     this.pot = sbAmt + bbAmt;
     this.currentBet = this.bigBlind;
@@ -968,10 +982,12 @@ class PokerTable {
     if (act === 'fold') {
       p.folded = true;
       p.lastAction = '弃牌';
+      this.recordPlayerStageAction(p.id, this.stage, 'F', '弃牌', 0);
       this.log(`玩家 [${p.name}] 弃牌`);
     } else if (act === 'check') {
       if (toCall > 0) return this.playerAction(playerId, 'fold');
       p.lastAction = '过牌';
+      this.recordPlayerStageAction(p.id, this.stage, 'X', '过牌', 0);
       this.log(`玩家 [${p.name}] 过牌`);
     } else if (act === 'call') {
       const callAmt = Math.min(toCall, p.chips);
@@ -979,6 +995,7 @@ class PokerTable {
       this.pot += callAmt;
       if (p.chips === 0) p.allIn = true;
       p.lastAction = p.allIn ? `全下跟注 ${callAmt}` : (toCall === 0 ? '过牌' : `跟注 ${callAmt}`);
+      this.recordPlayerStageAction(p.id, this.stage, 'C', `跟注 ${callAmt}`, callAmt);
       this.log(`玩家 [${p.name}] ${p.lastAction}`);
     } else if (act === 'raise' || act === 'bet') {
       const target = Math.max(parseInt(amount, 10), this.currentBet + this.minRaise);
@@ -990,6 +1007,7 @@ class PokerTable {
       this.minRaise = target - this.currentBet;
       this.currentBet = target;
       p.lastAction = `加注至 ${target}`;
+      this.recordPlayerStageAction(p.id, this.stage, act === 'bet' ? 'B' : 'R', `${act === 'bet' ? '下注' : '加注'} ${need}`, need);
       this.log(`玩家 [${p.name}] 加注至 ${target}`);
     } else if (act === 'allIn') {
       const allChips = p.chips;
@@ -1002,6 +1020,7 @@ class PokerTable {
         this.currentBet = target;
       }
       p.lastAction = `All-in (${allChips})`;
+      this.recordPlayerStageAction(p.id, this.stage, 'A', `全下 ${allChips}`, allChips);
       this.log(`🔥 玩家 [${p.name}] All-in 全下 ${allChips}！`);
     }
 
@@ -1165,11 +1184,44 @@ class PokerTable {
       }
     });
 
+    const flopCards = this.communityCards.slice(0, 3).map(c => c.toJSON());
+    const turnCard = this.communityCards[3] ? this.communityCards[3].toJSON() : null;
+    const riverCard = this.communityCards[4] ? this.communityCards[4].toJSON() : null;
+
+    const handPlayers = this.seats.map((p, idx) => {
+      if (!p || (!p.holeCards || p.holeCards.length === 0)) return null;
+      const isWin = this.handWinners.some(w => w.playerId === p.id);
+      const wonAmt = isWin ? (this.handWinners.find(w => w.playerId === p.id)?.totalWon || 0) : 0;
+      const net = wonAmt - p.totalBet;
+      let posLabel = 'EP';
+      if (idx === this.dealerSeat) posLabel = 'D';
+      else if (idx === this.smallBlindSeat) posLabel = 'SB';
+      else if (idx === this.bigBlindSeat) posLabel = 'BB';
+
+      return {
+        id: p.id,
+        name: p.name,
+        avatar: p.avatar,
+        position: posLabel,
+        holeCards: p.holeCards.map(c => c.toJSON()),
+        revealedCards: p.revealedCards || [false, false],
+        folded: p.folded,
+        totalBet: p.totalBet,
+        netProfit: net,
+        handDesc: getHandDescription(p.holeCards, this.communityCards),
+        actions: (this.handActionMap && this.handActionMap[p.id]) ? this.handActionMap[p.id] : { preflop: [], flop: [], turn: [], river: [] }
+      };
+    }).filter(Boolean);
+
     this.handHistoryList.unshift({
       handNumber: this.handCount,
       pot: this.pot,
-      communityCards: this.communityCards.map(c => c.toString()),
+      flopCards,
+      turnCard,
+      riverCard,
+      communityCards: this.communityCards.map(c => c.toJSON()),
       winners: this.handWinners,
+      players: handPlayers,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
   }
