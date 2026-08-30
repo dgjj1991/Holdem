@@ -793,7 +793,7 @@ class PokerTable {
 
   startTimer() {
     clearInterval(this.timerInterval);
-    this.actionTimeRemaining = this.defaultActionTime;
+    this.actionTimeRemaining = 15; // 15秒行动时间
     this.isUsingTimeBank = false;
 
     this.timerInterval = setInterval(() => {
@@ -803,15 +803,8 @@ class PokerTable {
         this.actionTimeRemaining--;
         this.notify();
       } else {
-        const p = this.seats[this.currentActorSeat];
-        if (p && p.timeBank > 0) {
-          this.isUsingTimeBank = true;
-          p.timeBank--;
-          this.notify();
-        } else {
-          clearInterval(this.timerInterval);
-          this.handleTimeout();
-        }
+        clearInterval(this.timerInterval);
+        this.handleTimeout();
       }
     }, 1000);
   }
@@ -820,10 +813,24 @@ class PokerTable {
     if (this.currentActorSeat === -1) return;
     const p = this.seats[this.currentActorSeat];
     if (!p) return;
+
+    p.timeoutCount = (p.timeoutCount || 0) + 1;
+    this.log(`⏳ 玩家 [${p.name}] 行动超时，系统自动处理并转为暂离`);
+
+    // 自动操作：可过牌则过牌，否则自动弃牌
     if (p.currentRoundBet === this.currentBet) {
       this.playerAction(p.id, 'check');
     } else {
       this.playerAction(p.id, 'fold');
+    }
+
+    // 自动置为暂离状态，避免下局继续卡桌
+    p.sittingOut = true;
+
+    // 如果连续超时 2 次或玩家已离线，自动站起离座释放座位
+    if (p.timeoutCount >= 2 || p.isOnline === false) {
+      this.log(`🚪 玩家 [${p.name}] 连续无操作/离线，系统自动将其请离座位`);
+      this.standUp(p.id);
     }
   }
 
@@ -1106,6 +1113,7 @@ class PokerTable {
           folded: p.folded,
           allIn: p.allIn,
           sittingOut: p.sittingOut,
+          isOnline: p.isOnline !== false,
           leaveNextHand: p.leaveNextHand,
           timeBank: p.timeBank,
           autoMuck: p.autoMuck,
@@ -1210,6 +1218,10 @@ io.on('connection', socket => {
     const existingSeat = room.table.seats.find(s => s && s.id === player.id);
     if (existingSeat) {
       existingSeat.name = player.name || existingSeat.name;
+      existingSeat.isOnline = true;
+      existingSeat.sittingOut = false; // 重新连接回来自动取消暂离
+      existingSeat.timeoutCount = 0;
+      room.table.log(`👋 玩家 [${existingSeat.name}] 重新连接回到座位！`);
     }
 
     callback({ success: true, roomId: currentRoomId, tableState: room.table.getPublicState(player.id) });
@@ -1348,6 +1360,41 @@ io.on('connection', socket => {
     const res = room.table.playerAction(currentPlayerId, action, amount);
     if (callback) callback(res);
     checkBotTurn(currentRoomId);
+  });
+
+  socket.on('disconnect', () => {
+    if (!currentRoomId || !currentPlayerId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    const { table } = room;
+    const seatIdx = table.seats.findIndex(s => s && s.id === currentPlayerId);
+    if (seatIdx === -1) return;
+
+    const p = table.seats[seatIdx];
+    p.isOnline = false;
+    p.sittingOut = true;
+    table.log(`🔌 玩家 [${p.name}] 离线/离开网页，已自动设为暂离`);
+
+    // 如果当前正轮到该玩家行动，立即自动替其弃牌推进牌局！
+    if (table.currentActorSeat === seatIdx && table.stage !== 'IDLE' && table.stage !== 'END_HAND') {
+      table.log(`⚡ 离线玩家 [${p.name}] 正在行动中，系统立即替其自动弃牌并推进牌局`);
+      table.playerAction(p.id, 'fold');
+    } else {
+      table.notify();
+    }
+
+    // 延迟 45 秒：如果玩家 45 秒内未重连回来，自动站起离座释放座位给他人！
+    setTimeout(() => {
+      const currentRoom = rooms.get(currentRoomId);
+      if (currentRoom) {
+        const liveP = currentRoom.table.seats[seatIdx];
+        if (liveP && liveP.id === currentPlayerId && liveP.isOnline === false) {
+          currentRoom.table.log(`🚪 离线玩家 [${liveP.name}] 超时未归，系统自动将其请离座位释放空座`);
+          currentRoom.table.standUp(currentPlayerId);
+        }
+      }
+    }, 45000);
   });
 
   socket.on('get_stats', callback => {

@@ -1597,8 +1597,12 @@
 
                 <div class="relative flex items-center justify-center">
                   
-                  <!-- 左侧行动/状态胶囊气泡 (1:1 还原原版下分/加分/秀牌/弃牌/过牌) -->
-                  ${p.lastAction ? `
+                  <!-- 左侧行动/状态胶囊气泡 (1:1 还原原版下分/加分/秀牌/弃牌/过牌/离线/暂离) -->
+                  ${p.isOnline === false ? `
+                    <div class="absolute -left-10 z-20 px-1 py-0.2 rounded bg-slate-700 text-slate-300 text-[9px] font-bold shadow">
+                      离线
+                    </div>
+                  ` : (p.lastAction ? `
                     <div class="absolute -left-10 z-20 px-1 py-0.2 rounded text-[9px] font-extrabold shadow ${
                       p.lastAction.includes('弃牌') ? 'bg-slate-300 text-slate-950' : 
                       (p.lastAction.includes('加注') || p.lastAction.includes('加分') ? 'bg-amber-500 text-slate-950' : 
@@ -1614,7 +1618,7 @@
                     <div class="absolute -left-10 z-20 px-1 py-0.2 rounded bg-slate-300 text-slate-950 text-[9px] font-bold shadow">
                       等待
                     </div>
-                  ` : ''))}
+                  ` : '')))}
 
                   <!-- 1:1 原版头像 + 嵌合记分牌条 + 绿色倒计时全覆盖 -->
                   <div class="dpzx-player-card ${isActor ? 'dpzx-acting-card' : ''} ${p.folded || p.sittingOut ? 'opacity-30 grayscale' : ''}">
