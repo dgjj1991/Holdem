@@ -530,7 +530,7 @@
       <div class="p-3.5 border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-base">📜</span>
-          <span class="text-xs font-black text-blue-400">过往牌局复盘记录</span>
+          <span id="drawer-history-title" class="text-xs font-black text-blue-400">过往牌局复盘记录</span>
         </div>
         <button onclick="app.toggleRightHistoryDrawer()" class="p-1 text-slate-400 hover:text-white text-base leading-none">✕</button>
       </div>
@@ -1812,15 +1812,22 @@
 
       renderRightHistoryDrawer(state) {
         const container = document.getElementById('drawer-history-content');
+        const headerTitle = document.getElementById('drawer-history-title');
         if (!container || !state || !state.handHistory) return;
+        if (headerTitle) {
+          headerTitle.innerText = `过往牌局复盘 (本场共 ${state.handHistory.length} 手)`;
+        }
         if (state.handHistory.length === 0) {
-          container.innerHTML = `<div class="text-center text-xs text-slate-500 py-8">暂无过往牌局记录</div>`;
+          container.innerHTML = `<div class="text-center text-xs text-slate-500 py-8">本场比赛尚未产生已完成手牌</div>`;
           return;
         }
         container.innerHTML = state.handHistory.map(h => `
-          <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 shadow">
+          <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5 shadow">
             <div class="flex items-center justify-between text-[11px]">
-              <span class="font-bold text-amber-400 font-mono-code">第 ${h.handNumber} 手</span>
+              <span class="font-black text-amber-400 font-mono-code flex items-center gap-1">
+                <span>第 ${h.handNumber} 手</span>
+                ${h.time ? `<span class="text-[9px] text-slate-500 font-normal">(${h.time})</span>` : ''}
+              </span>
               <span class="font-mono-code font-bold text-emerald-400">底池: ${h.pot ? h.pot.toLocaleString() : 0} 🪙</span>
             </div>
             <div class="text-xs text-slate-200 font-bold">
@@ -1828,8 +1835,8 @@
             </div>
             ${h.communityCards && h.communityCards.length > 0 ? `
               <div class="text-[10px] text-slate-400 font-mono-code flex items-center gap-1 pt-1 border-t border-slate-800/80">
-                <span>公共牌:</span>
-                <span class="text-slate-300 font-bold">${h.communityCards.join(' ')}</span>
+                <span class="text-slate-400">公共牌:</span>
+                <span class="text-slate-200 font-bold tracking-wider">${h.communityCards.join(' ')}</span>
               </div>
             ` : ''}
           </div>

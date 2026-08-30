@@ -1162,9 +1162,9 @@ class PokerTable {
       handNumber: this.handCount,
       pot: this.pot,
       communityCards: this.communityCards.map(c => c.toString()),
-      winners: this.handWinners
+      winners: this.handWinners,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
-    if (this.handHistoryList.length > 50) this.handHistoryList.pop();
   }
 
   finishHand() {
@@ -1284,7 +1284,7 @@ class PokerTable {
           ].filter(Boolean)
         };
       }),
-      handHistory: this.handHistoryList.slice(0, 15),
+      handHistory: this.handHistoryList,
       playerStats: Object.values(this.playerStatsMap).map(p => {
         const liveSeat = this.seats.find(s => s && s.id === p.id);
         const currentChips = liveSeat ? liveSeat.chips : (p.chips || 0);
