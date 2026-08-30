@@ -1161,11 +1161,16 @@ class PokerTable {
       seats: this.seats.map((p, idx) => {
         if (!p) return null;
         const isSelf = p.id === viewerId;
-        const isWinner = this.handWinners && this.handWinners.some(w => w.playerId === p.id);
-        const isShowdown = this.stage === 'SHOWDOWN' || this.stage === 'END_HAND';
-        const hasEquity = Boolean(equities[p.id]);
-        const revealLeft = isSelf || isWinner || hasEquity || p.revealedCards[0] || (isShowdown && !p.folded);
-        const revealRight = isSelf || isWinner || hasEquity || p.revealedCards[1] || (isShowdown && !p.folded);
+        const inHand = this.getInHandSeats();
+        const noMoreAction = inHand.length >= 2 && inHand.filter(it => !it.p.allIn).length <= 1;
+        const isShowdown = this.stage === 'SHOWDOWN';
+        const isAllInRunout = (this.stage === 'FLOP' || this.stage === 'TURN' || this.stage === 'RIVER') && noMoreAction && inHand.some(it => it.p.id === p.id);
+        const isWinnerAtEnd = this.stage === 'END_HAND' && this.handWinners && this.handWinners.some(w => w.playerId === p.id);
+
+        // 仅在属于本人、主动秀牌、最终摊牌比牌、或者全下跑马阶段时才公开
+        const canRevealLeft = isSelf || (p.revealedCards && p.revealedCards[0]) || (isShowdown && !p.folded) || isAllInRunout || isWinnerAtEnd;
+        const canRevealRight = isSelf || (p.revealedCards && p.revealedCards[1]) || (isShowdown && !p.folded) || isAllInRunout || isWinnerAtEnd;
+
         return {
           seatIndex: idx,
           id: p.id,
@@ -1179,17 +1184,17 @@ class PokerTable {
           allIn: p.allIn,
           sittingOut: p.sittingOut,
           isOnline: p.isOnline !== false,
-          equity: equities[p.id] || null,
+          equity: (isAllInRunout || isShowdown) ? (equities[p.id] || null) : (isSelf ? (equities[p.id] || null) : null),
           leaveNextHand: p.leaveNextHand,
           timeBank: p.timeBank,
           autoMuck: p.autoMuck,
           lastAction: p.lastAction,
-          handDescription: p.bestHand ? p.bestHand.description : '',
+          handDescription: (isSelf || isShowdown || isWinnerAtEnd) ? (p.bestHand ? p.bestHand.description : '') : '',
           is27: isSelf ? p.is27Hand : false,
           revealedCards: p.revealedCards,
           holeCards: [
-            p.holeCards[0] ? (revealLeft ? p.holeCards[0].toJSON() : { isHidden: true }) : null,
-            p.holeCards[1] ? (revealRight ? p.holeCards[1].toJSON() : { isHidden: true }) : null
+            p.holeCards[0] ? (canRevealLeft ? p.holeCards[0].toJSON() : { isHidden: true }) : null,
+            p.holeCards[1] ? (canRevealRight ? p.holeCards[1].toJSON() : { isHidden: true }) : null
           ].filter(Boolean)
         };
       })
