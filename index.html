@@ -2134,9 +2134,9 @@
         }
       }
 
-      createOnlineRoom(gameMode = 'CASH') {
+      createOnlineRoom(gameMode = 'CASH', preferredRoomId = null) {
         this.playerName = document.getElementById('input-player-name').value.trim() || '菠萝无敌';
-        const customRoomName = document.getElementById('input-room-name-cash').value.trim() || 'poker';
+        const customRoomName = document.getElementById('input-room-name-cash') ? document.getElementById('input-room-name-cash').value.trim() || 'poker' : 'poker';
         this.saveUserSession();
 
         let sb = 10, bb = 20;
@@ -2155,7 +2155,8 @@
             gameMode: gameMode,
             smallBlind: sb,
             bigBlind: bb,
-            durationMinutes: this.selectedDurationMinutes || 0
+            durationMinutes: this.selectedDurationMinutes || 1440,
+            preferredRoomId: preferredRoomId
           }, (res) => {
             if (res && res.success) {
               this.saveRecentRoom(res.roomId, customRoomName, `${sb}/${bb}`);
@@ -2183,7 +2184,7 @@
         this.saveUserSession();
 
         this.ensureSocketConnection(() => {
-          this.socket.emit('join_room', { roomId: roomCode, player: { id: this.playerId, name: this.playerName } }, (res) => {
+          this.socket.emit('join_room', { roomId: roomCode, player: { id: this.playerId, name: this.playerName }, autoCreateIfNotExist: true }, (res) => {
             if (res && res.success) {
               const rName = (res.tableState && res.tableState.name) ? res.tableState.name : 'poker';
               const rBlinds = (res.tableState && res.tableState.smallBlind) ? `${res.tableState.smallBlind}/${res.tableState.bigBlind}` : '10/20';
@@ -2192,8 +2193,8 @@
               this.showToast(`成功进入房间 [${roomCode}]！`, 'success');
 
               // 如果玩家原本不在桌上，自动找空位坐下
-              const alreadySeated = res.tableState.seats.some(s => s && s.id === this.playerId);
-              if (!alreadySeated) {
+              const alreadySeated = res.tableState && res.tableState.seats ? res.tableState.seats.some(s => s && s.id === this.playerId) : false;
+              if (!alreadySeated && res.tableState && res.tableState.seats) {
                 const emptyIdx = res.tableState.seats.findIndex(s => s === null);
                 if (emptyIdx !== -1) {
                   this.socket.emit('sit_down', {
@@ -2203,11 +2204,8 @@
                 }
               }
             } else {
-              const errMsg = res ? res.msg : '4 位房间码不存在或已解散';
-              this.showToast(errMsg, 'error');
-              if (confirm(`房间 [${roomCode}] 当前未在运行或已解散。\n是否立即为您重新创建该私人房间开打？`)) {
-                this.createOnlineRoom('CASH');
-              }
+              // 自动以该房号秒速拉起并进入
+              this.createOnlineRoom('CASH', roomCode);
             }
           });
         });

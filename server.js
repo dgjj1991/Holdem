@@ -1362,8 +1362,103 @@ class PokerTable {
   }
 }
 
-// ================= Socket.io 房间管理与 AI 极速驱动 =================
+// ================= Socket.io 房间管理与本地磁盘持久化系统 =================
+const DATA_DIR = path.join(__dirname, 'data');
+const STORE_FILE = path.join(DATA_DIR, 'active_rooms.json');
+
+if (!fs.existsSync(DATA_DIR)) {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
+}
+
 const rooms = new Map();
+
+function saveRoomsToDisk() {
+  try {
+    const data = {};
+    for (const [roomId, room] of rooms.entries()) {
+      if (room.table && !room.table.isGameEnded) {
+        data[roomId] = {
+          id: room.table.id,
+          hostId: room.hostId,
+          hostName: room.table.hostName,
+          name: room.table.name,
+          gameMode: room.table.gameMode,
+          smallBlind: room.table.smallBlind,
+          bigBlind: room.table.bigBlind,
+          defaultBuyIn: room.table.defaultBuyIn,
+          durationMinutes: room.table.durationMinutes,
+          expireTimestamp: room.table.expireTimestamp,
+          handCount: room.table.handCount,
+          playerStatsMap: room.table.playerStatsMap,
+          handHistoryList: room.table.handHistoryList,
+          seats: room.table.seats.map(s => s ? {
+            id: s.id,
+            name: s.name,
+            avatar: s.avatar,
+            chips: s.chips,
+            isBot: s.isBot,
+            sittingOut: true
+          } : null)
+        };
+      }
+    }
+    fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {}
+}
+
+function restoreRoomsFromDisk() {
+  try {
+    if (!fs.existsSync(STORE_FILE)) return;
+    const raw = fs.readFileSync(STORE_FILE, 'utf8');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    for (const roomId in data) {
+      const r = data[roomId];
+      if (!r.expireTimestamp || Date.now() < r.expireTimestamp) {
+        const table = new PokerTable({
+          id: r.id,
+          hostId: r.hostId,
+          hostName: r.hostName,
+          name: r.name,
+          gameMode: r.gameMode,
+          smallBlind: r.smallBlind,
+          bigBlind: r.bigBlind,
+          defaultBuyIn: r.defaultBuyIn,
+          durationMinutes: r.durationMinutes
+        });
+        table.expireTimestamp = r.expireTimestamp;
+        table.handCount = r.handCount || 0;
+        table.playerStatsMap = r.playerStatsMap || {};
+        table.handHistoryList = r.handHistoryList || [];
+
+        if (r.seats && Array.isArray(r.seats)) {
+          r.seats.forEach((s, idx) => {
+            if (s) {
+              table.sitDown(idx, s);
+              if (table.seats[idx]) {
+                table.seats[idx].chips = s.chips;
+                table.seats[idx].sittingOut = true;
+                table.seats[idx].isOnline = false;
+              }
+            }
+          });
+        }
+
+        table.onStateChange = () => {
+          broadcastTable(roomId);
+          checkBotTurn(roomId);
+          saveRoomsToDisk();
+        };
+        table.onLog = msg => io.to(roomId).emit('game_log', { message: msg });
+
+        rooms.set(roomId, { table, hostId: r.hostId });
+        console.log(`[Storage] Successfully restored room [${roomId}] (${r.name}) from disk!`);
+      }
+    }
+  } catch (e) {}
+}
+
+restoreRoomsFromDisk();
 
 function generate4DigitRoomId() {
   let code = '';
@@ -1373,38 +1468,41 @@ function generate4DigitRoomId() {
   return code;
 }
 
+function broadcastTable(roomId) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  io.in(roomId).fetchSockets().then(sockets => {
+    for (const s of sockets) {
+      s.emit('table_update', room.table.getPublicState(s.data.playerId));
+    }
+  });
+}
+
+function checkBotTurn(roomId) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  const { table } = room;
+  if (table.stage === 'IDLE' || table.stage === 'END_HAND' || table.isPaused) return;
+  const actor = table.seats[table.currentActorSeat];
+  if (actor && actor.isBot) {
+    setTimeout(() => {
+      if (table.seats[table.currentActorSeat] && table.seats[table.currentActorSeat].id === actor.id) {
+        const dec = PokerBot.decide(table, actor);
+        table.playerAction(actor.id, dec.action, dec.amount);
+      }
+    }, 500 + Math.random() * 400);
+  }
+}
+
 io.on('connection', socket => {
   let currentRoomId = null;
   let currentPlayerId = null;
 
-  function broadcastTable(roomId) {
-    const room = rooms.get(roomId);
-    if (!room) return;
-    io.in(roomId).fetchSockets().then(sockets => {
-      for (const s of sockets) {
-        s.emit('table_update', room.table.getPublicState(s.data.playerId));
-      }
-    });
-  }
-
-  function checkBotTurn(roomId) {
-    const room = rooms.get(roomId);
-    if (!room) return;
-    const { table } = room;
-    if (table.stage === 'IDLE' || table.stage === 'END_HAND' || table.isPaused) return;
-    const actor = table.seats[table.currentActorSeat];
-    if (actor && actor.isBot) {
-      setTimeout(() => {
-        if (table.seats[table.currentActorSeat] && table.seats[table.currentActorSeat].id === actor.id) {
-          const dec = PokerBot.decide(table, actor);
-          table.playerAction(actor.id, dec.action, dec.amount);
-        }
-      }, 500 + Math.random() * 400);
-    }
-  }
-
   socket.on('create_room', (options, callback) => {
-    const roomId = generate4DigitRoomId();
+    const roomId = (options.preferredRoomId && !rooms.has(options.preferredRoomId.toString().trim())) 
+      ? options.preferredRoomId.toString().trim() 
+      : generate4DigitRoomId();
+
     const table = new PokerTable({
       id: roomId,
       hostId: options.playerId,
@@ -1420,6 +1518,7 @@ io.on('connection', socket => {
     table.onStateChange = () => {
       broadcastTable(roomId);
       checkBotTurn(roomId);
+      saveRoomsToDisk();
     };
     table.onLog = msg => io.to(roomId).emit('game_log', { message: msg });
 
@@ -1431,6 +1530,7 @@ io.on('connection', socket => {
     }
 
     rooms.set(roomId, { table, hostId: options.playerId });
+    saveRoomsToDisk();
     socket.join(roomId);
     currentRoomId = roomId;
     currentPlayerId = options.playerId;
@@ -1440,9 +1540,34 @@ io.on('connection', socket => {
     broadcastTable(roomId);
   });
 
-  socket.on('join_room', ({ roomId, player }, callback) => {
+  socket.on('join_room', ({ roomId, player, autoCreateIfNotExist }, callback) => {
     const cleanRoomId = roomId.toString().trim();
-    const room = rooms.get(cleanRoomId);
+    let room = rooms.get(cleanRoomId);
+
+    if (!room && autoCreateIfNotExist) {
+      // 智能无感自动拉起该私人房间
+      const table = new PokerTable({
+        id: cleanRoomId,
+        hostId: player.id,
+        hostName: player.name || '房主',
+        name: 'poker',
+        gameMode: 'CASH',
+        smallBlind: 10,
+        bigBlind: 20,
+        defaultBuyIn: 1000,
+        durationMinutes: 1440 // 默认 24 小时全天场
+      });
+      table.onStateChange = () => {
+        broadcastTable(cleanRoomId);
+        checkBotTurn(cleanRoomId);
+        saveRoomsToDisk();
+      };
+      table.onLog = msg => io.to(cleanRoomId).emit('game_log', { message: msg });
+      rooms.set(cleanRoomId, { table, hostId: player.id });
+      saveRoomsToDisk();
+      room = rooms.get(cleanRoomId);
+    }
+
     if (!room) return callback({ success: false, msg: '4 位数字房间号不存在' });
 
     currentRoomId = cleanRoomId;
