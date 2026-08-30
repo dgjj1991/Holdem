@@ -14,7 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 彻底禁用页面缓存，确保更新后即刻生效
+// 彻底禁用页面缓存，确保每次加载均为最新版本
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   next();
@@ -278,7 +278,7 @@ const BOT_NAMES = [
 
 class PokerBot {
   static decide(table, bot) {
-    const toCall = table.currentBet - bot.currentRoundBet;
+    const toCall = Math.max(0, table.currentBet - bot.currentRoundBet);
     const canCheck = toCall === 0;
     const chips = bot.chips;
 
@@ -300,7 +300,7 @@ class PokerBot {
       if (score >= 50) {
         if (Math.random() < 0.3) return { action: 'raise', amount: table.currentBet * 2 + table.minRaise };
         return { action: 'call', amount: toCall };
-      } else if (score >= 28 && toCall <= table.bigBlind * 2) {
+      } else if (score >= 26 && toCall <= table.bigBlind * 2) {
         return { action: 'call', amount: toCall };
       }
       return { action: 'fold', amount: 0 };
@@ -311,12 +311,12 @@ class PokerBot {
     const rank = evalRes.type.rank;
 
     if (rank >= 4) {
-      if (canCheck) return Math.random() < 0.3 ? { action: 'check', amount: 0 } : { action: 'bet', amount: Math.floor(table.pot * 0.6) };
+      if (canCheck) return Math.random() < 0.3 ? { action: 'check', amount: 0 } : { action: 'bet', amount: Math.max(table.bigBlind, Math.floor(table.pot * 0.6)) };
       return Math.random() < 0.4 ? { action: 'raise', amount: table.currentBet * 2 + table.minRaise } : { action: 'call', amount: toCall };
     }
     if (rank >= 2) {
       if (canCheck) return { action: 'check', amount: 0 };
-      if (toCall <= chips * 0.3) return { action: 'call', amount: toCall };
+      if (toCall <= chips * 0.35) return { action: 'call', amount: toCall };
       return { action: 'fold', amount: 0 };
     }
     if (canCheck) return { action: 'check', amount: 0 };
@@ -393,12 +393,19 @@ class PokerTable {
 
   sitDown(idx, player) {
     if (this.isGameEnded) return { success: false, msg: '本场比赛已结算结束' };
-    if (idx < 0 || idx >= this.maxSeats || this.seats[idx] !== null) return { success: false, msg: '座位已占用' };
+    if (idx < 0 || idx >= this.maxSeats) return { success: false, msg: '座位索引无效' };
     
+    // 如果该玩家已经在桌上某个座位，自动更新绑定该座位
     const existingIdx = this.seats.findIndex(s => s && s.id === player.id);
     if (existingIdx !== -1) {
-      return { success: true, player: this.seats[existingIdx] };
+      const existingSeat = this.seats[existingIdx];
+      existingSeat.name = player.name || existingSeat.name;
+      existingSeat.avatar = player.avatar || existingSeat.avatar;
+      this.notify();
+      return { success: true, player: existingSeat };
     }
+
+    if (this.seats[idx] !== null) return { success: false, msg: '该座位已被占用' };
 
     const initialChips = player.chips || this.defaultBuyIn;
     const seatPlayer = {
@@ -436,6 +443,7 @@ class PokerTable {
       };
     } else {
       this.playerStatsMap[player.id].avatar = seatPlayer.avatar;
+      this.playerStatsMap[player.id].name = seatPlayer.name;
     }
 
     this.log(`玩家 [${player.name}] 坐下 ${idx + 1} 号位 (带入 ${initialChips})`);
@@ -608,7 +616,7 @@ class PokerTable {
         if (this.stage === 'IDLE' && !this.isPaused && !this.isGameEnded && this.getActiveSeats().length >= 2) {
           this.startNewHand();
         }
-      }, 600);
+      }, 800);
     }
   }
 
@@ -768,14 +776,14 @@ class PokerTable {
   playerAction(playerId, act, amount = 0) {
     if (this.currentActorSeat === -1) return { success: false, msg: '当前不可行动' };
     const p = this.seats[this.currentActorSeat];
-    if (!p) return { success: false, msg: '玩家不存在' };
+    if (!p) return { success: false, msg: '当前行动者不存在' };
 
     // 允许通过 playerId 或者座号匹配（增强容错）
     if (p.id !== playerId && !p.isBot) {
-      return { success: false, msg: `不是您的行动回合 (当前是 ${p.name})` };
+      return { success: false, msg: `当前正在等待 [${p.name}] 行动` };
     }
 
-    const toCall = this.currentBet - p.currentRoundBet;
+    const toCall = Math.max(0, this.currentBet - p.currentRoundBet);
 
     if (act === 'fold') {
       p.folded = true;
@@ -1138,6 +1146,12 @@ io.on('connection', socket => {
     currentPlayerId = player.id;
     socket.data.playerId = player.id;
     socket.join(currentRoomId);
+
+    // 重新对齐桌上玩家绑定
+    const existingSeat = room.table.seats.find(s => s && s.id === player.id);
+    if (existingSeat) {
+      existingSeat.name = player.name || existingSeat.name;
+    }
 
     callback({ success: true, roomId: currentRoomId, tableState: room.table.getPublicState(player.id) });
     broadcastTable(currentRoomId);

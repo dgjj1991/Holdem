@@ -330,7 +330,7 @@
     <!-- 三大核心大按钮 (直接触发，绝对响应) -->
     <div class="grid grid-cols-3 gap-2">
       <!-- 弃牌 (Fold) -->
-      <button onclick="app.performAction('fold')" class="py-3.5 rounded-2xl bg-rose-600/30 hover:bg-rose-600 border border-rose-500/50 text-rose-300 hover:text-white font-extrabold text-sm transition active:scale-95 flex flex-col items-center justify-center shadow">
+      <button id="btn-drawer-fold" onclick="app.performAction('fold')" class="py-3.5 rounded-2xl bg-rose-600/30 hover:bg-rose-600 border border-rose-500/50 text-rose-300 hover:text-white font-extrabold text-sm transition active:scale-95 flex flex-col items-center justify-center shadow">
         <span>弃牌</span>
         <span class="text-[10px] font-normal opacity-80">Fold</span>
       </button>
@@ -998,7 +998,7 @@
         }
       }
 
-      // 核心下注行动
+      // 核心下注行动，收到确认后才收起抽屉
       performAction(act) {
         if (!this.socket) return;
         const amount = this.currentBetSliderValue;
@@ -1216,11 +1216,11 @@
         } else if (state.stage === 'IDLE') {
           const activeCount = state.seats.filter(p => p && p.chips > 0 && !p.sittingOut).length;
           statusEl.innerText = activeCount >= 2 ? '⚡ 人数满足，正在洗牌自动发牌...' : '等待至少 2 人就座 (+AI 快速开局)...';
-          statusEl.className = 'mt-2 text-[11px] font-semibold text-slate-300 bg-black/60 px-4 py-0.5 rounded-full border border-slate-700/60 backdrop-blur';
+          statusEl.className = 'mt-2 text-[11px] font-semibold text-slate-300 bg-black/60 px-3.5 py-0.5 rounded-full border border-slate-700/60 backdrop-blur';
         } else {
           const actorName = state.seats[state.currentActorSeat] ? state.seats[state.currentActorSeat].name : '玩家';
           statusEl.innerText = isMyTurn ? '👉 轮到您行动！' : `等待 [${actorName}] 行动...`;
-          statusEl.className = isMyTurn ? 'mt-2 text-[11px] font-black text-slate-950 bg-amber-400 px-5 py-0.5 rounded-full border border-white backdrop-blur shadow-xl animate-pulse' : 'mt-2 text-[11px] font-semibold text-slate-300 bg-black/60 px-4 py-0.5 rounded-full border border-slate-700/60 backdrop-blur';
+          statusEl.className = isMyTurn ? 'mt-2 text-[11px] font-black text-slate-950 bg-amber-400 px-5 py-0.5 rounded-full border border-white backdrop-blur shadow-xl animate-pulse' : 'mt-2 text-[11px] font-semibold text-slate-300 bg-black/60 px-3.5 py-0.5 rounded-full border border-slate-700/60 backdrop-blur';
         }
 
         // 🎯 核心行动抽屉弹出逻辑
