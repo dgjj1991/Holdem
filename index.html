@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>德州聚会 - 在线德州扑克 (Texas Hold'em)</title>
+  <title>德州聚会 - 专业在线德州扑克平台</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -14,11 +14,11 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap');
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #080c14;
+      background-color: #050811;
       color: #f1f5f9;
       overflow-x: hidden;
       user-select: none;
@@ -28,27 +28,33 @@
     .font-poker { font-family: 'Cinzel', serif; }
     .font-mono-code { font-family: 'JetBrains Mono', monospace; }
 
-    /* 扑克桌毛呢质感 */
+    /* 扑克桌顶级毛呢质感 */
     .poker-felt {
-      background: radial-gradient(circle at 50% 50%, #165b33 0%, #0f4024 65%, #0a2917 100%);
-      box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.85), 0 25px 50px -12px rgba(0, 0, 0, 0.9);
-      border: 12px solid #2e1a0f;
-      outline: 3px solid #4a2b18;
+      background: radial-gradient(circle at 50% 50%, #155e34 0%, #0d3d22 65%, #082615 100%);
+      box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.9), 0 25px 60px -15px rgba(0, 0, 0, 0.95);
+      border: 12px solid #29160c;
+      outline: 3px solid #4a2916;
     }
 
     .poker-card {
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
-      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .poker-card:hover { transform: translateY(-4px) scale(1.04); }
+
+    /* 专业四色扑克牌配色 (Four-Color Deck) */
+    .card-suit-s { color: #0f172a; } /* 黑桃: 纯黑 */
+    .card-suit-h { color: #dc2626; } /* 红桃: 艳红 */
+    .card-suit-d { color: #2563eb; } /* 方块: 皇家蓝 (防混淆) */
+    .card-suit-c { color: #16a34a; } /* 草花: 翡翠绿 (防混淆) */
 
     @keyframes timer-glow {
       0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9)); }
       50% { filter: drop-shadow(0 0 16px rgba(239, 68, 68, 1)); }
     }
-    .acting-pulse { animation: timer-glow 1.4s infinite ease-in-out; }
+    .acting-pulse { animation: timer-glow 1.2s infinite ease-in-out; }
 
-    /* 庄家/盲注实体徽章 */
+    /* 实体大徽章 */
     .badge-dealer {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #000;
@@ -76,16 +82,9 @@
     .danmaku-item {
       position: absolute;
       white-space: nowrap;
-      animation: danmaku-slide 7s linear forwards;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 0, 0, 0.8);
+      animation: danmaku-slide 7.5s linear forwards;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.8);
     }
-
-    /* 2-7 绝杀爆炸光效 */
-    @keyframes flex-glow {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.9)); }
-      50% { transform: scale(1.08); filter: drop-shadow(0 0 40px rgba(239, 68, 68, 1)); }
-    }
-    .flex-animation { animation: flex-glow 1s infinite ease-in-out; }
 
     input[type=range] { accent-color: #f59e0b; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -94,21 +93,21 @@
 </head>
 <body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-slate-950 text-slate-100">
 
-  <!-- ================= 全屏弹幕飞行容器 (无遮挡点击) ================= -->
+  <!-- ================= 全屏弹幕飞行容器 ================= -->
   <div id="danmaku-container" class="fixed inset-0 pointer-events-none z-40 overflow-hidden"></div>
 
-  <!-- ================= 顶部导航状态栏 ================= -->
-  <header class="h-14 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 flex items-center justify-between z-30 shrink-0">
+  <!-- ================= 顶部专业导航状态栏 ================= -->
+  <header class="h-14 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-3 md:px-5 flex items-center justify-between z-30 shrink-0">
     <div class="flex items-center gap-3">
       <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center font-poker font-black text-slate-950 text-lg shadow-md shadow-amber-500/20">
         ♠
       </div>
       <div>
         <h1 class="text-sm font-bold tracking-wide flex items-center gap-2">
-          <span>德州聚会</span>
-          <span id="room-mode-badge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">常规桌</span>
+          <span>德州聚会 Pro</span>
+          <span id="room-mode-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-semibold">四色牌常规桌</span>
         </h1>
-        <div class="text-xs text-slate-400 flex items-center gap-2">
+        <div class="text-[11px] text-slate-400 flex items-center gap-2">
           <span id="room-id-display" class="font-mono-code font-bold text-amber-400">房间: 多人实时房</span>
           <span class="text-slate-600">|</span>
           <span id="room-blind-display">盲注: 10/20</span>
@@ -116,69 +115,82 @@
       </div>
     </div>
 
-    <!-- 顶部操作区 -->
+    <!-- 顶部中心快捷开关 (BB模式 / 四色牌 / 房主暂停) -->
     <div class="flex items-center gap-2">
       
-      <!-- 🪂 降落伞跑马开关 (Run It Twice) -->
-      <button id="btn-toggle-twice" onclick="app.toggleRunItTwice()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-xs font-bold text-indigo-300 border border-indigo-700/50 transition" title="全下 All-in 翻两次牌以降低波动">
-        <span>🪂 降落伞跑马: <b id="label-run-twice" class="text-emerald-400">翻1次</b></span>
+      <!-- 🪙 金币 / 🅱️ BB 显示切换开关 -->
+      <button id="btn-toggle-bb" onclick="app.toggleDisplayMode()" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 transition">
+        <span>显示:</span>
+        <span id="label-display-mode" class="text-amber-400 font-mono-code">🪙 金币</span>
+      </button>
+
+      <!-- 👑 房主管理专属控制台 (仅房主可见) -->
+      <button id="btn-host-panel" onclick="app.toggleHostModal(true)" class="hidden flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 transition">
+        <i data-lucide="crown" class="w-3.5 h-3.5"></i>
+        <span>房主管理</span>
       </button>
 
       <!-- 邀请好友 -->
-      <button id="btn-share-room" onclick="app.copyRoomLink()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 transition">
-        <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-        <span>邀请好友</span>
+      <button onclick="app.copyRoomLink()" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 transition">
+        <i data-lucide="share-2" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span class="hidden sm:inline">邀请</span>
       </button>
 
-      <!-- 快速添加 AI 陪练 -->
-      <button id="btn-add-bot" onclick="app.addBot()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition">
+      <!-- +AI 陪练 -->
+      <button onclick="app.addBot()" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 transition">
         <i data-lucide="bot" class="w-3.5 h-3.5"></i>
         <span>+AI</span>
       </button>
 
-      <!-- 战绩统计 -->
-      <button onclick="app.toggleStatsModal(true)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
-        <i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i>
-        <span>战绩榜</span>
-      </button>
-
-      <!-- 手牌历史 -->
-      <button onclick="app.toggleHistoryModal(true)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
-        <i data-lucide="history" class="w-3.5 h-3.5 text-blue-400"></i>
-        <span>回顾</span>
-      </button>
-
-      <!-- 房间设置 -->
-      <button onclick="app.showLobbyModal()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="返回大厅/设置">
+      <!-- 房间大厅 -->
+      <button onclick="app.showLobbyModal()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
         <i data-lucide="menu" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
 
-  <!-- ================= 主对局区 (10人椭圆牌桌) ================= -->
+  <!-- ================= 主对局区 (左悬浮战绩榜 + 10人桌 + 右悬浮牌局记录) ================= -->
   <main class="flex-1 relative w-full h-[calc(100vh-140px)] flex items-center justify-center p-2 md:p-6 overflow-hidden">
     
+    <!-- 👈 左侧悬浮按钮：已玩手牌数 & 各家胜负排行榜 -->
+    <div class="absolute left-3 top-4 z-30 flex flex-col gap-2">
+      <button onclick="app.toggleStatsModal(true)" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-amber-500/30 text-xs font-bold text-amber-300 shadow-xl backdrop-blur transition hover:scale-105">
+        <i data-lucide="bar-chart-2" class="w-4 h-4 text-amber-400"></i>
+        <span>战绩榜</span>
+        <span id="hand-count-pill" class="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono-code">第0手</span>
+      </button>
+    </div>
+
+    <!-- 👉 右侧悬浮按钮：本场所有手牌历史记录本 -->
+    <div class="absolute right-3 top-4 z-30 flex flex-col gap-2">
+      <button onclick="app.toggleHistoryModal(true)" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-blue-500/30 text-xs font-bold text-blue-300 shadow-xl backdrop-blur transition hover:scale-105">
+        <i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i>
+        <span>所有牌局</span>
+      </button>
+    </div>
+
     <!-- 德州牌桌本体 -->
     <div id="poker-table" class="relative w-full max-w-5xl aspect-[16/10] md:aspect-[16/9] rounded-[110px] md:rounded-[200px] poker-felt flex flex-col items-center justify-center">
       
       <div class="absolute inset-3 md:inset-6 rounded-[90px] md:rounded-[180px] border border-emerald-400/20 pointer-events-none flex flex-col items-center justify-center opacity-30">
         <span class="font-poker text-xl md:text-3xl tracking-widest text-emerald-100/40 select-none">TEXAS HOLD'EM</span>
-        <span class="text-[10px] md:text-xs text-emerald-200/30 tracking-wider mt-0.5">AUTO DEAL · 2-7 FLEX · RUN IT TWICE</span>
+        <span class="text-[10px] md:text-xs text-emerald-200/30 tracking-wider mt-0.5">FOUR COLOR · TIME BANK · RABBIT HUNT</span>
       </div>
 
       <!-- 中央公共牌区与底池展示 -->
       <div class="relative z-10 flex flex-col items-center gap-2 md:gap-3">
-        <!-- 底池金额 -->
+        
+        <!-- 总底池金额 -->
         <div class="flex items-center gap-2">
           <div class="px-4 py-1 rounded-full bg-slate-950/85 border border-amber-500/40 backdrop-blur shadow-lg flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
             <span class="text-xs text-amber-200/90 font-medium">总底池</span>
             <span id="table-pot" class="font-mono-code font-extrabold text-amber-400 text-base md:text-xl">0</span>
-            <span class="text-xs">🪙</span>
+            <span id="table-pot-unit" class="text-xs">🪙</span>
           </div>
         </div>
 
-        <!-- 5 张公共牌 (第一板) -->
+        <!-- 5 张四色公共牌 -->
         <div id="community-cards" class="flex items-center gap-1.5 md:gap-2.5 min-h-[64px] md:min-h-[92px]">
           <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">1</div>
           <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">2</div>
@@ -187,18 +199,19 @@
           <div class="w-10 h-14 md:w-15 md:h-22 rounded-lg border-2 border-dashed border-emerald-500/30 flex items-center justify-center text-emerald-500/20 text-xs">5</div>
         </div>
 
-        <!-- 降落伞跑马第 2 板公共牌 (触发 Run It Twice 时展示) -->
-        <div id="board2-container" class="hidden flex items-center gap-1.5 min-h-[50px] bg-black/40 px-3 py-1 rounded-xl border border-indigo-500/40 backdrop-blur">
-          <span class="text-[10px] text-indigo-300 font-bold mr-1">🪂第2跑:</span>
-          <div id="board2-cards" class="flex items-center gap-1"></div>
-        </div>
-
         <!-- 牌局提示信息 -->
         <div id="table-status-message" class="text-xs md:text-sm font-semibold text-emerald-200 bg-black/60 px-4 py-0.5 rounded-full border border-emerald-500/30 backdrop-blur shadow">
           满 2 人就座即全自动发牌...
         </div>
 
-        <!-- 🔥 2-7 绝杀炸场炫耀特效按钮 (纯视觉排场，不扣钱) -->
+        <!-- 🐰 猎兔看牌按钮 (当局提前结束且牌未发完时弹出) -->
+        <div id="rabbit-hunt-trigger" class="hidden animate-bounce z-30">
+          <button onclick="app.huntRabbit()" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold text-xs shadow-xl border border-teal-300 flex items-center gap-1.5 hover:scale-105 transition">
+            <span>🐰 猎兔看牌 (付1BB给赢家看剩余未发牌)</span>
+          </button>
+        </div>
+
+        <!-- 🔥 2-7 绝杀炸场炫耀特效按钮 -->
         <div id="bounty-27-trigger" class="hidden animate-bounce z-30">
           <button onclick="app.trigger27ShowEffect()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 text-slate-950 font-black text-xs md:text-sm shadow-2xl border-2 border-white flex items-center gap-2 cursor-pointer hover:scale-105 transition">
             <span>🔥 秀出 2/7 绝杀！全屏炸场炫耀！🔥</span>
@@ -214,169 +227,141 @@
 
   </main>
 
-  <!-- ================= 底部操作控制面板 & 实时弹幕输入 ================= -->
-  <footer class="h-20 bg-slate-900/95 border-t border-slate-800 px-3 md:px-6 flex items-center justify-between z-30 shrink-0 gap-3">
+  <!-- ================= 底部操作控制面板 & 预选操作 & 实时弹幕 ================= -->
+  <footer class="h-22 bg-slate-900/95 border-t border-slate-800 px-3 md:px-6 flex flex-col justify-center z-30 shrink-0 gap-1.5">
     
-    <!-- 玩家信息与个人选项 (暂离/站起) -->
-    <div class="flex items-center gap-2 min-w-[150px] shrink-0">
-      <div class="relative">
-        <img id="my-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Me" class="w-9 h-9 rounded-full border-2 border-amber-400 bg-slate-800">
-        <span id="my-role-badge" class="hidden absolute -bottom-1 -right-1 px-1.5 py-0.2 text-[9px] font-black rounded-full badge-dealer shadow">D</span>
-      </div>
-      <div>
-        <div class="flex items-center gap-1">
-          <span id="my-name" class="text-xs font-bold truncate max-w-[70px]">我的昵称</span>
-          <div id="seat-options-menu" class="hidden flex items-center gap-1">
+    <!-- 顶部状态小条：时间银行提示 + 自动埋牌开关 + 预选操作条 -->
+    <div class="flex items-center justify-between text-xs px-1">
+      
+      <!-- 玩家自身信息与手牌秀单张/双张 -->
+      <div class="flex items-center gap-2">
+        <div class="relative">
+          <img id="my-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Me" class="w-8 h-8 rounded-full border border-amber-400 bg-slate-800">
+          <span id="my-role-badge" class="hidden absolute -bottom-1 -right-1 px-1.5 py-0.2 text-[8px] font-black rounded-full badge-dealer">D</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span id="my-name" class="font-bold truncate max-w-[70px]">我的昵称</span>
+          <span id="my-chips-display" class="font-mono-code font-bold text-amber-400">1000 🪙</span>
+          
+          <!-- 个人座位选项 -->
+          <div id="seat-options-menu" class="hidden flex items-center gap-1 pl-1">
             <button id="btn-sit-out" onclick="app.toggleSitOut()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300">暂离</button>
             <button onclick="app.standUp()" class="px-1.5 py-0.5 rounded bg-rose-950 hover:bg-rose-900 border border-rose-800/50 text-[10px] text-rose-300">站起</button>
           </div>
         </div>
-        <div class="flex items-center gap-1 text-xs text-amber-400 font-mono-code font-extrabold">
-          <span>🪙</span>
-          <span id="my-chips">1000</span>
+
+        <!-- 秀单张 / 秀双张按钮 (在座有手牌时显示) -->
+        <div id="show-cards-bar" class="hidden flex items-center gap-1 pl-2 border-l border-slate-800">
+          <button onclick="app.showCards('left')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700" title="只亮左边一张牌">秀左牌</button>
+          <button onclick="app.showCards('right')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700" title="只亮右边一张牌">秀右牌</button>
+          <button onclick="app.showCards('both')" class="px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold" title="亮全部两张牌">秀双牌</button>
         </div>
       </div>
-      <button id="btn-rebuy" onclick="app.rebuy()" class="hidden px-2 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow animate-bounce">
-        +1000补币
-      </button>
-    </div>
 
-    <!-- 💬 实时弹幕聊天输入区 -->
-    <div class="hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-700 max-w-sm">
-      <input type="text" id="input-danmaku" placeholder="发弹幕聊天... (按回车发送)" maxlength="30" onkeydown="if(event.key==='Enter') app.sendDanmaku()" class="w-36 md:w-48 bg-transparent text-xs text-white focus:outline-none placeholder:text-slate-500">
-      <button onclick="app.sendDanmaku()" class="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">发送</button>
-      <div class="flex items-center gap-1 text-[10px] text-slate-400 pl-1 border-l border-slate-700">
-        <button onclick="app.sendQuickDanmaku('🔥 All in 不要怂！')" class="hover:text-amber-300">All in!</button>
-        <button onclick="app.sendQuickDanmaku('😎 抓到了吧！')" class="hover:text-amber-300">抓到!</button>
-        <button onclick="app.sendQuickDanmaku('🤝 GG好牌！')" class="hover:text-amber-300">GG</button>
+      <!-- 预选操作区 (未轮到自己时显示) -->
+      <div id="pre-action-bar" class="hidden flex items-center gap-3 bg-slate-800/90 px-3 py-1 rounded-xl border border-slate-700">
+        <span class="text-[10px] text-slate-400 font-semibold">预选:</span>
+        <label class="flex items-center gap-1 cursor-pointer text-[11px] text-slate-200">
+          <input type="checkbox" id="pre-check-fold" onchange="app.onPreActionChange('checkFold')" class="accent-amber-400">
+          <span>过/弃 (Check/Fold)</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer text-[11px] text-slate-200">
+          <input type="checkbox" id="pre-auto-check" onchange="app.onPreActionChange('autoCheck')" class="accent-emerald-400">
+          <span>自动过牌 (Check)</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer text-[11px] text-slate-200">
+          <input type="checkbox" id="pre-call-any" onchange="app.onPreActionChange('callAny')" class="accent-blue-400">
+          <span>跟注任何 (Call Any)</span>
+        </label>
       </div>
+
+      <!-- 自动埋牌设置与时间银行储备展示 -->
+      <div class="hidden sm:flex items-center gap-3 text-[11px] text-slate-400">
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="setting-auto-muck" checked class="accent-amber-400">
+          <span>自动埋牌 (Auto Muck)</span>
+        </label>
+        <div class="flex items-center gap-1 text-indigo-300 font-mono-code font-bold">
+          <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+          <span>Time Bank: <b id="my-time-bank">300</b>s</span>
+        </div>
+      </div>
+
     </div>
 
-    <!-- 核心行动操作区 (Fold, Check/Call, Raise, All-in) -->
-    <div id="action-controls" class="flex-1 flex flex-col md:flex-row items-center justify-end gap-2 max-w-xl">
+    <!-- 底部主操作条：弹幕聊天 + 加注滑块 + 弃/过/跟/注/加时 -->
+    <div class="flex items-center justify-between gap-2">
       
-      <!-- 快捷加注条 -->
-      <div id="quick-bet-bar" class="hidden flex items-center gap-1.5 w-full md:w-auto justify-center">
-        <button onclick="app.setBetPreset('min')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">最小</button>
-        <button onclick="app.setBetPreset('2.5bb')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">2.5BB</button>
-        <button onclick="app.setBetPreset('half_pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">1/2池</button>
-        <button onclick="app.setBetPreset('two_thirds_pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">2/3池</button>
-        <button onclick="app.setBetPreset('pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700">满池</button>
-        <button onclick="app.setBetPreset('all_in')" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700/50 text-[11px] font-bold">All-in</button>
+      <!-- 💬 实时弹幕聊天输入框 -->
+      <div class="hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-700 max-w-xs">
+        <input type="text" id="input-danmaku" placeholder="发弹幕聊天... (按回车)" maxlength="30" onkeydown="if(event.key==='Enter') app.sendDanmaku()" class="w-32 bg-transparent text-xs text-white focus:outline-none placeholder:text-slate-500">
+        <button onclick="app.sendDanmaku()" class="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">发</button>
+        <div class="flex items-center gap-1 text-[10px] text-slate-400 pl-1 border-l border-slate-700">
+          <button onclick="app.sendQuickDanmaku('🔥 All in 不要怂！')" class="hover:text-amber-300">All in!</button>
+          <button onclick="app.sendQuickDanmaku('😎 抓到了吧！')" class="hover:text-amber-300">抓到!</button>
+        </div>
       </div>
 
-      <!-- 行动主按钮组 -->
-      <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
-        <button id="btn-fold" onclick="app.performAction('fold')" disabled class="px-3 md:px-5 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
-          弃牌 (Fold)
-        </button>
+      <!-- 核心行动操作区 -->
+      <div id="action-controls" class="flex-1 flex flex-col md:flex-row items-center justify-end gap-2 max-w-2xl">
+        
+        <!-- 快捷加注预设 -->
+        <div id="quick-bet-bar" class="hidden flex items-center gap-1 justify-center">
+          <button onclick="app.setBetPreset('min')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700">最小</button>
+          <button onclick="app.setBetPreset('2.2bb')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700">2.2BB</button>
+          <button onclick="app.setBetPreset('2.5bb')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700">2.5BB</button>
+          <button onclick="app.setBetPreset('third_pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700">1/3池</button>
+          <button onclick="app.setBetPreset('half_pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700">1/2池</button>
+          <button onclick="app.setBetPreset('two_thirds_pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700">2/3池</button>
+          <button onclick="app.setBetPreset('pot')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700">满池</button>
+          <button onclick="app.setBetPreset('all_in')" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700/50 text-[10px] font-bold">All-in</button>
+        </div>
 
-        <button id="btn-check-call" onclick="app.performAction('call')" disabled class="px-3 md:px-6 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1">
-          <span id="check-call-label">过牌 (Check)</span>
-        </button>
+        <!-- 行动按钮组 -->
+        <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
+          
+          <!-- ⏳ 免费加时 (+30s) -->
+          <button id="btn-extra-time" onclick="app.requestExtraTime()" disabled class="px-2.5 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/50 text-indigo-300 text-xs font-bold transition disabled:opacity-30 disabled:pointer-events-none">
+            +30s加时
+          </button>
 
-        <div id="raise-box" class="flex items-center gap-1">
-          <div class="hidden sm:flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-xl border border-slate-700">
-            <input type="range" id="bet-slider" min="20" max="1000" step="10" value="20" oninput="app.onSliderChange(this.value)" class="w-14 md:w-20 cursor-pointer">
-            <span id="bet-slider-val" class="text-xs font-mono-code font-bold text-amber-400 w-8 text-right">40</span>
+          <!-- 弃牌 (Fold) -->
+          <button id="btn-fold" onclick="app.performAction('fold')" disabled class="px-3 md:px-5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
+            弃牌 (Fold)
+          </button>
+
+          <!-- 过牌 / 跟注 (Check / Call) -->
+          <button id="btn-check-call" onclick="app.performAction('call')" disabled class="px-3 md:px-6 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-300 hover:text-white font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1">
+            <span id="check-call-label">过牌 (Check)</span>
+          </button>
+
+          <!-- 加注滑块与加注按钮 -->
+          <div id="raise-box" class="flex items-center gap-1">
+            <div class="hidden sm:flex items-center gap-1 bg-slate-800 px-2 py-0.5 rounded-xl border border-slate-700">
+              <input type="range" id="bet-slider" min="20" max="1000" step="10" value="20" oninput="app.onSliderChange(this.value)" class="w-14 md:w-20 cursor-pointer">
+              <span id="bet-slider-val" class="text-xs font-mono-code font-bold text-amber-400 w-8 text-right">40</span>
+            </div>
+
+            <button id="btn-raise" onclick="app.performAction('raise')" disabled class="px-3 md:px-5 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-500 border border-amber-500/50 text-amber-300 hover:text-slate-950 font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
+              <span id="raise-label">加注</span>
+            </button>
           </div>
 
-          <button id="btn-raise" onclick="app.performAction('raise')" disabled class="px-3 md:px-5 py-2 rounded-xl bg-amber-600/30 hover:bg-amber-500 border border-amber-500/50 text-amber-300 hover:text-slate-950 font-bold text-xs md:text-sm transition disabled:opacity-30 disabled:pointer-events-none">
-            <span id="raise-label">加注</span>
-          </button>
         </div>
+
       </div>
 
     </div>
 
   </footer>
 
-  <!-- ================= 弹窗 1：创建/加入房间大厅 ================= -->
-  <div id="modal-lobby" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
-      
-      <div class="text-center space-y-1">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center font-poker text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/30">
-          ♠
-        </div>
-        <h2 class="text-xl font-extrabold tracking-wide text-white">德州聚会 · 房间大厅</h2>
-        <p class="text-xs text-slate-400">自动发牌 · 降落伞跑马 · 2/7炸场特效 · 实时弹幕</p>
-      </div>
-
-      <!-- 玩家昵称输入 -->
-      <div class="space-y-1.5">
-        <label class="text-xs font-semibold text-slate-300">您的玩家昵称</label>
-        <input type="text" id="input-player-name" value="扑克之王" maxlength="10" oninput="app.onNameChange(this.value)" class="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-amber-400 transition" placeholder="输入昵称">
-      </div>
-
-      <!-- 模式选项卡 -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-800/80 rounded-xl border border-slate-700/60">
-        <button id="tab-pvp" onclick="app.switchLobbyTab('pvp')" class="py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow transition">
-          好友多人联机
-        </button>
-        <button id="tab-pve" onclick="app.switchLobbyTab('pve')" class="py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
-          单人练习 (9 AI)
-        </button>
-      </div>
-
-      <!-- PVP 模式专属面板 -->
-      <div id="pvp-panel" class="space-y-4">
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-slate-300">赛制类型</label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 border border-slate-700 cursor-pointer hover:border-slate-500">
-              <input type="radio" name="game-mode-radio" value="CASH" checked class="accent-amber-400">
-              <div class="text-left">
-                <div class="text-xs font-bold text-slate-200">常规桌 (Cash)</div>
-                <div class="text-[10px] text-slate-400">1000币自由补买</div>
-              </div>
-            </label>
-            <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 border border-slate-700 cursor-pointer hover:border-slate-500">
-              <input type="radio" name="game-mode-radio" value="TOURNAMENT" class="accent-amber-400">
-              <div class="text-left">
-                <div class="text-xs font-bold text-slate-200">锦标赛 (SNG)</div>
-                <div class="text-[10px] text-slate-400">定时升盲淘汰制</div>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div class="space-y-2">
-          <button id="btn-create-room" onclick="app.createOnlineRoom()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>创建专属私人房间</span>
-          </button>
-          
-          <div class="flex items-center gap-2 pt-1">
-            <input type="text" id="input-room-code" placeholder="输入 6 位房间码" maxlength="6" class="flex-1 uppercase font-mono-code px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
-            <button onclick="app.joinOnlineRoom()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">
-              加入房间
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- PVE 模式专属面板 -->
-      <div id="pve-panel" class="hidden space-y-3">
-        <p class="text-xs text-slate-400 bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 leading-relaxed">
-          💡 **单人练习房**：系统自动为您安排 9 名智能 AI 陪练！
-        </p>
-        <button id="btn-enter-pve" onclick="app.startOfflinePve()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
-          <i data-lucide="play-circle" class="w-4 h-4"></i>
-          <span>进入单人练习房间</span>
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ================= 弹窗 2：战绩排行榜 ================= -->
+  <!-- ================= 弹窗 1：左抽屉 · 实时各家胜负排行榜 ================= -->
   <div id="modal-stats" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2">
-          <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
-          <h3 class="text-base font-bold text-white">本场累计战绩与输赢榜</h3>
+          <i data-lucide="bar-chart-2" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-base font-bold text-white">本场已玩 <span id="stats-hand-count" class="text-amber-400 font-mono-code">0</span> 手 · 各家胜负盈亏榜</h3>
         </div>
         <button onclick="app.toggleStatsModal(false)" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -388,10 +373,11 @@
           <thead class="text-slate-400 border-b border-slate-800 font-medium">
             <tr>
               <th class="py-2">排名 / 玩家</th>
+              <th class="py-2 text-center">总带入</th>
               <th class="py-2 text-center">总局数</th>
-              <th class="py-2 text-center">胜局数</th>
               <th class="py-2 text-center">胜率</th>
               <th class="py-2 text-right">当前筹码</th>
+              <th class="py-2 text-right">净盈亏</th>
             </tr>
           </thead>
           <tbody id="leaderboard-tbody" class="divide-y divide-slate-800/60 font-mono-code"></tbody>
@@ -400,13 +386,13 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗 3：手牌历史回顾 ================= -->
+  <!-- ================= 弹窗 2：右抽屉 · 本场所有牌局历史大记录本 ================= -->
   <div id="modal-history" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2">
-          <i data-lucide="history" class="w-5 h-5 text-blue-400"></i>
-          <h3 class="text-base font-bold text-white">最近对局历史回顾</h3>
+          <i data-lucide="book-open" class="w-5 h-5 text-blue-400"></i>
+          <h3 class="text-base font-bold text-white">本场所有手牌历史记录本 (Hand Replay Log)</h3>
         </div>
         <button onclick="app.toggleHistoryModal(false)" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -417,15 +403,111 @@
     </div>
   </div>
 
+  <!-- ================= 弹窗 3：👑 房主管理与俱乐部控制台 ================= -->
+  <div id="modal-host" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-base font-bold text-white">👑 房主控制台</h3>
+        </div>
+        <button onclick="app.toggleHostModal(false)" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <button id="btn-host-pause" onclick="app.hostTogglePause()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-bold text-slate-200 flex items-center justify-center gap-2">
+          <i data-lucide="pause" class="w-4 h-4"></i>
+          <span id="label-host-pause">暂停牌局</span>
+        </button>
+
+        <button onclick="app.hostEndGame()" class="w-full py-2.5 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-700/50 text-sm font-bold text-rose-300 flex items-center justify-center gap-2">
+          <i data-lucide="flag" class="w-4 h-4"></i>
+          <span>正式结束整场游戏并生成总结算报表</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 4：🏁 终场全员大结算战报 ================= -->
+  <div id="modal-summary" class="hidden fixed inset-0 bg-black/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-500/60 w-full max-w-xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 text-center">
+      <div>
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center text-3xl shadow-xl shadow-amber-500/30">
+          🏆
+        </div>
+        <h2 class="text-xl font-black text-white mt-3">对局圆满结束 · 最终账单总报表</h2>
+        <p class="text-xs text-slate-400 mt-1">恭喜各位选手！盈亏已结算</p>
+      </div>
+
+      <div class="overflow-y-auto max-h-60 no-scrollbar border border-slate-800 rounded-2xl bg-slate-950/60">
+        <table class="w-full text-left text-xs">
+          <thead class="text-slate-400 border-b border-slate-800 bg-slate-900/80">
+            <tr>
+              <th class="py-2.5 px-3">选手</th>
+              <th class="py-2.5 text-center">总带入</th>
+              <th class="py-2.5 text-center">离桌筹码</th>
+              <th class="py-2.5 text-right px-3">最终净净盈亏</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody" class="divide-y divide-slate-800/60 font-mono-code"></tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="app.copySummaryReport()" class="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition">
+          复制战报发到群里
+        </button>
+        <button onclick="document.getElementById('modal-summary').classList.add('hidden')" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗 5：大厅模式选择 ================= -->
+  <div id="modal-lobby" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center font-poker text-2xl font-black text-slate-950 shadow-lg shadow-amber-500/30">
+          ♠
+        </div>
+        <h2 class="text-xl font-extrabold text-white">德州聚会 Pro 大厅</h2>
+        <p class="text-xs text-slate-400">时间银行 · 四色牌 · 猎兔看牌 · 秀单双张 · 终场账单</p>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-slate-300">您的玩家昵称</label>
+        <input type="text" id="input-player-name" value="扑克之王" maxlength="10" oninput="app.onNameChange(this.value)" class="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-amber-400 transition" placeholder="输入昵称">
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="app.createOnlineRoom()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>创建专属私人房间 (房主)</span>
+        </button>
+        
+        <div class="flex items-center gap-2 pt-1">
+          <input type="text" id="input-room-code" placeholder="输入 6 位房间码" maxlength="6" class="flex-1 uppercase font-mono-code px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-center text-white focus:outline-none focus:border-amber-400">
+          <button onclick="app.joinOnlineRoom()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">
+            加入房间
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= 核心客户端 JavaScript 引擎 ================= -->
   <script>
     class TexasHoldemApp {
       constructor() {
-        this.mode = 'PVP';
         this.socket = null;
         this.tableState = null;
+        this.displayMode = 'CHIPS'; // 'CHIPS' or 'BB'
         this.currentBetSliderValue = 40;
-        this.isRunItTwice = false;
+        this.preAction = null; // 'checkFold', 'autoCheck', 'callAny'
+        this.lastSummaryData = null;
         this.loadUserSession();
       }
 
@@ -467,171 +549,164 @@
         const roomQuery = params.get('room');
         if (roomQuery) {
           document.getElementById('input-room-code').value = roomQuery.toUpperCase();
-          this.switchLobbyTab('pvp');
         }
         if (window.lucide) lucide.createIcons();
-      }
-
-      switchLobbyTab(tab) {
-        if (tab === 'pve') {
-          document.getElementById('tab-pve').className = 'py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow transition';
-          document.getElementById('tab-pvp').className = 'py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
-          document.getElementById('pve-panel').classList.remove('hidden');
-          document.getElementById('pvp-panel').classList.add('hidden');
-        } else {
-          document.getElementById('tab-pvp').className = 'py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow transition';
-          document.getElementById('tab-pve').className = 'py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
-          document.getElementById('pvp-panel').classList.remove('hidden');
-          document.getElementById('pve-panel').classList.add('hidden');
-        }
       }
 
       showLobbyModal() { this.init(); document.getElementById('modal-lobby').classList.remove('hidden'); }
       hideLobbyModal() { document.getElementById('modal-lobby').classList.add('hidden'); }
 
       toggleStatsModal(show) {
-        const modal = document.getElementById('modal-stats');
-        if (show) { modal.classList.remove('hidden'); this.fetchAndRenderStats(); }
-        else modal.classList.add('hidden');
+        const m = document.getElementById('modal-stats');
+        if (show) { m.classList.remove('hidden'); this.fetchAndRenderStats(); }
+        else m.classList.add('hidden');
       }
 
       toggleHistoryModal(show) {
-        const modal = document.getElementById('modal-history');
-        if (show) { modal.classList.remove('hidden'); this.fetchAndRenderHistory(); }
-        else modal.classList.add('hidden');
+        const m = document.getElementById('modal-history');
+        if (show) { m.classList.remove('hidden'); this.fetchAndRenderHistory(); }
+        else m.classList.add('hidden');
+      }
+
+      toggleHostModal(show) {
+        const m = document.getElementById('modal-host');
+        if (show) m.classList.remove('hidden');
+        else m.classList.add('hidden');
+      }
+
+      toggleDisplayMode() {
+        this.displayMode = this.displayMode === 'CHIPS' ? 'BB' : 'CHIPS';
+        document.getElementById('label-display-mode').innerText = this.displayMode === 'CHIPS' ? '🪙 金币' : '🅱️ 大盲BB';
+        if (this.tableState) this.renderTable(this.tableState);
+      }
+
+      formatAmount(amt) {
+        if (this.displayMode === 'BB' && this.tableState && this.tableState.bigBlind > 0) {
+          return (amt / this.tableState.bigBlind).toFixed(1) + ' BB';
+        }
+        return amt + ' 🪙';
       }
 
       copyRoomLink() {
         const roomId = this.tableState ? this.tableState.id : '';
-        if (!roomId) { alert('请先创建或加入一个房间！'); return; }
+        if (!roomId) { alert('请先创建或加入房间！'); return; }
         const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
-        navigator.clipboard.writeText(url).then(() => {
-          alert(`已复制房间邀请链接：\n${url}\n\n发送给好友，朋友点开即可同桌对战！`);
-        }).catch(() => {
-          prompt('请复制房间链接发给好友：', url);
-        });
+        navigator.clipboard.writeText(url).then(() => alert(`已复制房间链接：\n${url}\n\n发给好友直接同桌对战！`)).catch(() => prompt('请复制：', url));
       }
 
-      // ================= 实时弹幕引擎 =================
+      // ================= 弹幕 =================
       sendDanmaku() {
         const input = document.getElementById('input-danmaku');
         const text = input.value.trim();
         if (!text) return;
         input.value = '';
-        if (this.socket) {
-          this.socket.emit('send_danmaku', { text, senderName: this.playerName });
-        }
+        if (this.socket) this.socket.emit('send_danmaku', { text, senderName: this.playerName });
       }
-
       sendQuickDanmaku(text) {
-        if (this.socket) {
-          this.socket.emit('send_danmaku', { text, senderName: this.playerName });
-        }
+        if (this.socket) this.socket.emit('send_danmaku', { text, senderName: this.playerName });
       }
-
       spawnDanmakuElement(data) {
         const container = document.getElementById('danmaku-container');
         const el = document.createElement('div');
         el.className = 'danmaku-item text-xs md:text-sm font-bold flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 border border-slate-700/60 backdrop-blur shadow-lg';
-        
-        // 随机高度轨道 (10% ~ 75%)
-        const topPercent = 12 + Math.random() * 60;
-        el.style.top = `${topPercent}%`;
+        el.style.top = `${12 + Math.random() * 55}%`;
         el.style.color = data.color || '#f59e0b';
-        el.innerHTML = `
-          <span class="text-[10px] text-slate-400 font-normal">[${data.sender}]</span>
-          <span>${data.text}</span>
-        `;
-
+        el.innerHTML = `<span class="text-[10px] text-slate-400">[${data.sender}]</span><span>${data.text}</span>`;
         container.appendChild(el);
-        // 7.5秒后自动移除
         setTimeout(() => el.remove(), 7500);
       }
 
-      // ================= 🪂 降落伞跑马 (Run It Twice) =================
-      toggleRunItTwice() {
-        this.isRunItTwice = !this.isRunItTwice;
-        document.getElementById('label-run-twice').innerText = this.isRunItTwice ? '翻2次 (降落伞模式)' : '翻1次';
-        document.getElementById('label-run-twice').className = this.isRunItTwice ? 'text-amber-400 font-extrabold' : 'text-emerald-400';
-        if (this.socket) {
-          this.socket.emit('toggle_run_it_twice', { enabled: this.isRunItTwice });
-        }
+      // ================= 秀牌 / 猎兔 / 加时 =================
+      showCards(which) {
+        if (this.socket) this.socket.emit('show_cards', { which }, () => {});
       }
-
-      // ================= 🔥 2-7 绝杀炸场特效 (纯视觉庆祝，不扣钱) =================
+      requestExtraTime() {
+        if (this.socket) this.socket.emit('request_extra_time', (res) => {
+          if (res && !res.success) alert(res.msg);
+        });
+      }
+      huntRabbit() {
+        if (this.socket) this.socket.emit('hunt_rabbit', (res) => {
+          if (res && res.success) {
+            document.getElementById('rabbit-hunt-trigger').classList.add('hidden');
+          }
+        });
+      }
       trigger27ShowEffect() {
-        if (this.socket) {
-          this.socket.emit('trigger_27_effect', (res) => {
-            if (res && res.success) {
-              document.getElementById('bounty-27-trigger').classList.add('hidden');
-            }
-          });
-        }
-      }
-
-      show27FlexBroadcast(winnerName) {
-        if (window.confetti) {
-          window.confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
-        }
-        // 发射多条霸气金色弹幕
-        this.spawnDanmakuElement({
-          text: `🔥【2-7 绝杀】玩家 [${winnerName}] 凭 2-7 绝世炸穿全场！天选之子！`,
-          sender: '牌桌系统',
-          color: '#fbbf24'
+        if (this.socket) this.socket.emit('trigger_27_effect', () => {
+          document.getElementById('bounty-27-trigger').classList.add('hidden');
         });
       }
 
-      // ================= PVP 实时网络逻辑 =================
-      ensureSocketConnection(callback) {
-        if (this.socket && this.socket.connected) {
-          if (callback) callback();
-          return;
+      // ================= 房主控制 =================
+      hostTogglePause() {
+        if (this.socket) this.socket.emit('toggle_pause', (res) => {
+          if (res && res.success) {
+            document.getElementById('label-host-pause').innerText = res.isPaused ? '继续牌局' : '暂停牌局';
+            this.toggleHostModal(false);
+          }
+        });
+      }
+      hostEndGame() {
+        if (confirm('确认正式结束整场游戏并为全桌生成总结算战报大账单吗？')) {
+          if (this.socket) this.socket.emit('end_game_session', () => this.toggleHostModal(false));
         }
+      }
+
+      // ================= 预选操作 =================
+      onPreActionChange(type) {
+        const cf = document.getElementById('pre-check-fold');
+        const ac = document.getElementById('pre-auto-check');
+        const ca = document.getElementById('pre-call-any');
+
+        if (type === 'checkFold') { ac.checked = false; ca.checked = false; this.preAction = cf.checked ? 'checkFold' : null; }
+        else if (type === 'autoCheck') { cf.checked = false; ca.checked = false; this.preAction = ac.checked ? 'autoCheck' : null; }
+        else if (type === 'callAny') { cf.checked = false; ac.checked = false; this.preAction = ca.checked ? 'callAny' : null; }
+      }
+
+      executePreActionIfMatch(state, mySeat) {
+        if (!this.preAction || !mySeat) return;
+        const toCall = state.currentBet - mySeat.currentRoundBet;
+
+        if (this.preAction === 'checkFold') {
+          if (toCall === 0) this.performAction('check');
+          else this.performAction('fold');
+        } else if (this.preAction === 'autoCheck' && toCall === 0) {
+          this.performAction('check');
+        } else if (this.preAction === 'callAny') {
+          this.performAction('call');
+        }
+
+        // 清除勾选
+        this.preAction = null;
+        document.getElementById('pre-check-fold').checked = false;
+        document.getElementById('pre-auto-check').checked = false;
+        document.getElementById('pre-call-any').checked = false;
+      }
+
+      // ================= Socket 网络 =================
+      ensureSocketConnection(callback) {
+        if (this.socket && this.socket.connected) { if (callback) callback(); return; }
 
         let backendUrl = window.location.origin;
-        if (window.location.hostname.includes('github.io')) {
-          backendUrl = 'https://holdem-g2z3.onrender.com';
-        }
+        if (window.location.hostname.includes('github.io')) backendUrl = 'https://holdem-g2z3.onrender.com';
 
-        this.addLogMessage(`连接服务器: ${backendUrl}...`);
         this.socket = io(backendUrl, { transports: ['websocket', 'polling'], reconnection: true });
-
-        this.socket.on('connect', () => {
-          this.addLogMessage('✅ 联机服务已连接！');
-          if (callback) callback();
-        });
-
-        this.socket.on('table_update', (state) => {
-          this.renderTable(state);
-        });
-
-        this.socket.on('game_log', (data) => {
-          this.addLogMessage(data.message);
-        });
-
-        // 监听新弹幕
-        this.socket.on('new_danmaku', (danmaku) => {
-          this.spawnDanmakuElement(danmaku);
-        });
-
-        // 监听 2-7 绝杀特效广播
+        this.socket.on('connect', () => { if (callback) callback(); });
+        this.socket.on('table_update', (state) => this.renderTable(state));
+        this.socket.on('new_danmaku', (data) => this.spawnDanmakuElement(data));
         this.socket.on('broadcast_27_effect', ({ winnerName }) => {
-          this.show27FlexBroadcast(winnerName);
+          if (window.confetti) window.confetti({ particleCount: 150, spread: 100 });
+          this.spawnDanmakuElement({ text: `🔥【2-7 绝杀】玩家 [${winnerName}] 凭 2-7 绝世炸穿全场！`, sender: '牌桌系统', color: '#fbbf24' });
         });
+        this.socket.on('broadcast_game_summary', ({ summary }) => this.showSummaryModal(summary));
       }
 
       createOnlineRoom() {
         this.playerName = document.getElementById('input-player-name').value.trim() || '扑克之王';
         this.saveUserSession();
-        const modeRadio = document.querySelector('input[name="game-mode-radio"]:checked');
-        const gameMode = modeRadio ? modeRadio.value : 'CASH';
-
         this.ensureSocketConnection(() => {
-          this.socket.emit('create_room', {
-            playerId: this.playerId,
-            name: `${this.playerName}的房间`,
-            gameMode: gameMode
-          }, (res) => {
+          this.socket.emit('create_room', { playerId: this.playerId, name: `${this.playerName}的房间` }, (res) => {
             if (res && res.success) {
               this.hideLobbyModal();
               document.getElementById('room-id-display').innerText = `房间: ${res.roomId}`;
@@ -639,7 +714,6 @@
                 seatIndex: 0,
                 player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
               }, () => {});
-              this.addLogMessage(`🎉 房间已创建！就座 >=2 人将全自动开始发牌。`);
             }
           });
         });
@@ -647,15 +721,12 @@
 
       joinOnlineRoom() {
         const roomCode = document.getElementById('input-room-code').value.trim().toUpperCase();
-        if (!roomCode || roomCode.length < 4) { alert('请输入有效的房间码'); return; }
+        if (!roomCode || roomCode.length < 4) { alert('请输入有效房间码'); return; }
         this.playerName = document.getElementById('input-player-name').value.trim() || '扑克之王';
         this.saveUserSession();
 
         this.ensureSocketConnection(() => {
-          this.socket.emit('join_room', {
-            roomId: roomCode,
-            player: { id: this.playerId, name: this.playerName }
-          }, (res) => {
+          this.socket.emit('join_room', { roomId: roomCode, player: { id: this.playerId, name: this.playerName } }, (res) => {
             if (res && res.success) {
               this.hideLobbyModal();
               document.getElementById('room-id-display').innerText = `房间: ${res.roomId}`;
@@ -666,52 +737,20 @@
                   player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
                 }, () => {});
               }
-            } else {
-              alert(res ? res.msg : '房间不存在');
-            }
+            } else alert(res ? res.msg : '房间不存在');
           });
         });
       }
 
-      standUp() {
-        if (this.socket) {
-          this.socket.emit('stand_up', () => this.addLogMessage('您已站起离开座位'));
-        }
-      }
-
+      standUp() { if (this.socket) this.socket.emit('stand_up', () => {}); }
       toggleSitOut() {
         if (!this.tableState) return;
         const mySeat = this.tableState.seats.find(s => s && s.id === this.playerId);
         if (!mySeat) return;
-        const nextState = !mySeat.sittingOut;
-        if (this.socket) {
-          this.socket.emit('toggle_sit_out', { sittingOut: nextState }, () => {
-            document.getElementById('btn-sit-out').innerText = nextState ? '回座' : '暂离';
-          });
-        }
+        if (this.socket) this.socket.emit('toggle_sit_out', { sittingOut: !mySeat.sittingOut }, () => {});
       }
-
-      rebuy() {
-        if (this.socket) {
-          this.socket.emit('rebuy', (res) => {
-            if (res && !res.success) alert(res.msg);
-          });
-        }
-      }
-
-      addBot() {
-        if (this.socket) {
-          this.socket.emit('add_bot', {}, (res) => {
-            if (res && !res.success) alert(res.msg);
-          });
-        }
-      }
-
-      performAction(act) {
-        if (this.socket) {
-          this.socket.emit('player_action', { action: act, amount: this.currentBetSliderValue });
-        }
-      }
+      addBot() { if (this.socket) this.socket.emit('add_bot', {}, () => {}); }
+      performAction(act) { if (this.socket) this.socket.emit('player_action', { action: act, amount: this.currentBetSliderValue }); }
 
       setBetPreset(type) {
         const state = this.tableState;
@@ -722,7 +761,9 @@
         const bb = state.bigBlind;
 
         let target = cur + minR;
-        if (type === '2.5bb') target = Math.round(bb * 2.5);
+        if (type === '2.2bb') target = Math.round(bb * 2.2);
+        else if (type === '2.5bb') target = Math.round(bb * 2.5);
+        else if (type === 'third_pot') target = Math.max(cur + minR, Math.round(pot * 0.33));
         else if (type === 'half_pot') target = Math.max(cur + minR, Math.round(pot * 0.5));
         else if (type === 'two_thirds_pot') target = Math.max(cur + minR, Math.round(pot * 0.66));
         else if (type === 'pot') target = Math.max(cur + minR, pot);
@@ -735,26 +776,41 @@
         this.currentBetSliderValue = parseInt(v, 10);
         document.getElementById('bet-slider').value = this.currentBetSliderValue;
         document.getElementById('bet-slider-val').innerText = this.currentBetSliderValue;
-        document.getElementById('raise-label').innerText = `加注至 ${this.currentBetSliderValue}`;
+        document.getElementById('raise-label').innerText = `加注至 ${this.formatAmount(this.currentBetSliderValue)}`;
+      }
+
+      getCardColorClass(suit) {
+        if (suit === 's') return 'card-suit-s'; // 纯黑
+        if (suit === 'h') return 'card-suit-h'; // 鲜红
+        if (suit === 'd') return 'card-suit-d'; // 皇家蓝
+        if (suit === 'c') return 'card-suit-c'; // 翡翠绿
+        return 'text-slate-900';
       }
 
       renderTable(state) {
         this.tableState = state;
-        document.getElementById('table-pot').innerText = state.pot;
+        document.getElementById('table-pot').innerText = this.displayMode === 'BB' ? (state.pot / state.bigBlind).toFixed(1) : state.pot;
+        document.getElementById('table-pot-unit').innerText = this.displayMode === 'BB' ? 'BB' : '🪙';
         document.getElementById('room-blind-display').innerText = `盲注: ${state.smallBlind}/${state.bigBlind}`;
+        document.getElementById('hand-count-pill').innerText = `第${state.handCount}手`;
 
-        // 1. 公共牌 (Board 1)
+        // 房主专属控制按钮
+        const btnHost = document.getElementById('btn-host-panel');
+        if (state.isHost) btnHost.classList.remove('hidden');
+        else btnHost.classList.add('hidden');
+
+        // 四色公共牌
         const cc = document.getElementById('community-cards');
         let cHtml = '';
         for (let i = 0; i < 5; i++) {
           if (state.communityCards[i]) {
             const c = state.communityCards[i];
-            const col = c.suit === 'h' ? 'text-red-600' : c.suit === 'd' ? 'text-blue-600' : c.suit === 'c' ? 'text-emerald-700' : 'text-slate-900';
+            const col = this.getCardColorClass(c.suit);
             cHtml += `
               <div class="w-10 h-14 md:w-15 md:h-22 bg-white rounded-lg poker-card border border-slate-300 flex flex-col justify-between p-1 font-bold ${col} select-none">
-                <div class="text-xs leading-none">${c.label}</div>
+                <div class="text-xs leading-none font-mono-code">${c.label}</div>
                 <div class="text-base md:text-xl text-center leading-none">${c.symbol}</div>
-                <div class="text-xs leading-none text-right">${c.label}</div>
+                <div class="text-xs leading-none text-right font-mono-code">${c.label}</div>
               </div>
             `;
           } else {
@@ -763,25 +819,7 @@
         }
         cc.innerHTML = cHtml;
 
-        // 2. 🪂 降落伞跑马第 2 板公共牌 (Board 2)
-        const b2Container = document.getElementById('board2-container');
-        const b2CardsEl = document.getElementById('board2-cards');
-        if (state.board2Cards && state.board2Cards.length > 0) {
-          b2Container.classList.remove('hidden');
-          b2CardsEl.innerHTML = state.board2Cards.map(c => {
-            const col = c.suit === 'h' ? 'text-red-600' : c.suit === 'd' ? 'text-blue-600' : c.suit === 'c' ? 'text-emerald-700' : 'text-slate-900';
-            return `
-              <div class="w-7 h-10 bg-white rounded border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${col} text-[9px]">
-                <div>${c.label}</div>
-                <div class="text-center">${c.symbol}</div>
-              </div>
-            `;
-          }).join('');
-        } else {
-          b2Container.classList.add('hidden');
-        }
-
-        // 3. 10人座位
+        // 10人座位
         const sc = document.getElementById('seats-container');
         let sHtml = '';
         for (let i = 0; i < 10; i++) {
@@ -795,40 +833,42 @@
             const isD = state.dealerSeat === i;
             const isSB = state.smallBlindSeat === i;
             const isBB = state.bigBlindSeat === i;
-            const isSittingOut = p.sittingOut;
 
             sHtml += `
               <div class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-auto transition-all" style="top: ${topPercent}%; left: ${leftPercent}%;">
-                
                 <div class="flex items-center gap-1 mb-0.5 z-20">
-                  ${isSittingOut ? '<span class="px-1.5 py-0.2 rounded-full bg-slate-700 text-slate-300 text-[9px] font-bold">保位暂离</span>' : ''}
+                  ${p.sittingOut ? '<span class="px-1.5 py-0.2 rounded-full bg-slate-700 text-slate-300 text-[9px] font-bold">暂离</span>' : ''}
                   ${isD ? '<span class="px-1.5 py-0.2 rounded-full badge-dealer text-[10px] font-black tracking-wider">D 庄家</span>' : ''}
                   ${isSB ? '<span class="px-1.5 py-0.2 rounded-full badge-sb text-[10px] font-black tracking-wider">SB 小盲</span>' : ''}
                   ${isBB ? '<span class="px-1.5 py-0.2 rounded-full badge-bb text-[10px] font-black tracking-wider">BB 大盲</span>' : ''}
                 </div>
 
-                <!-- 手牌 (2张) -->
+                <!-- 手牌 (四色牌) -->
                 <div class="flex items-center -space-x-3 mb-0.5">
                   ${p.holeCards.map(c => c.isHidden ? `
                     <div class="w-6 h-9 md:w-8 md:h-11 bg-gradient-to-br from-blue-700 to-indigo-900 rounded border border-blue-400/50 shadow flex items-center justify-center text-[9px] text-blue-200">🂠</div>
                   ` : `
-                    <div class="w-6 h-9 md:w-8 md:h-11 bg-white rounded border border-slate-300 shadow flex flex-col justify-between p-0.5 font-bold ${c.suit === 'h' ? 'text-red-600' : c.suit === 'd' ? 'text-blue-600' : c.suit === 'c' ? 'text-emerald-700' : 'text-slate-900'} text-[9px]">
-                      <div>${c.label}</div>
+                    <div class="w-6 h-9 md:w-8 md:h-11 bg-white rounded border border-slate-300 shadow flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} text-[9px]">
+                      <div class="font-mono-code">${c.label}</div>
                       <div class="text-center">${c.symbol}</div>
                     </div>
                   `).join('')}
                 </div>
 
-                <!-- 头像 -->
+                <!-- 头像 & 时间银行指示 -->
                 <div class="relative">
-                  <img src="${p.avatar}" class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-800 border-2 ${isActor ? 'border-amber-400 acting-pulse scale-110' : 'border-slate-700'} ${p.folded || isSittingOut ? 'opacity-30 grayscale' : ''}">
-                  ${isActor ? `<div class="absolute -top-2 -right-2 px-1 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black font-mono-code">${state.actionTimeRemaining}s</div>` : ''}
+                  <img src="${p.avatar}" class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-800 border-2 ${isActor ? 'border-amber-400 acting-pulse scale-110' : 'border-slate-700'} ${p.folded || p.sittingOut ? 'opacity-30 grayscale' : ''}">
+                  ${isActor ? `
+                    <div class="absolute -top-2 -right-2 px-1.5 py-0.2 rounded-full ${state.isUsingTimeBank ? 'bg-indigo-600 text-white animate-ping' : 'bg-amber-500 text-slate-950'} text-[9px] font-black font-mono-code shadow">
+                      ${state.isUsingTimeBank ? 'Bank' : state.actionTimeRemaining + 's'}
+                    </div>
+                  ` : ''}
                 </div>
 
-                <!-- 昵称/筹码 -->
-                <div class="bg-slate-950/90 border border-slate-800 rounded px-1.5 py-0.5 text-center mt-0.5 shadow max-w-[80px]">
+                <!-- 昵称 / 筹码 -->
+                <div class="bg-slate-950/90 border border-slate-800 rounded px-1.5 py-0.5 text-center mt-0.5 shadow max-w-[85px]">
                   <div class="text-[9px] font-bold text-slate-200 truncate">${p.name}</div>
-                  <div class="text-[9px] font-mono-code font-bold text-amber-400">🪙 ${p.chips}</div>
+                  <div class="text-[9px] font-mono-code font-bold text-amber-400">${this.formatAmount(p.chips)}</div>
                 </div>
 
                 ${p.lastAction ? `<div class="mt-0.5 px-1.5 py-0.2 rounded-full bg-black/80 border border-amber-500/30 text-[8px] text-amber-200">${p.lastAction}</div>` : ''}
@@ -836,7 +876,7 @@
             `;
           } else {
             sHtml += `
-              <div onclick="app.sitDownAtSeat(${i})" class="absolute -translate-x-1/2 -translate-y-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full border-2 border-dashed border-emerald-400/30 hover:border-amber-400 bg-black/30 hover:bg-black/60 flex items-center justify-center text-emerald-400/50 hover:text-amber-300 cursor-pointer pointer-events-auto transition" style="top: ${topPercent}%; left: ${leftPercent}%;" title="点击坐下">
+              <div onclick="app.sitDownAtSeat(${i})" class="absolute -translate-x-1/2 -translate-y-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full border-2 border-dashed border-emerald-400/30 hover:border-amber-400 bg-black/30 hover:bg-black/60 flex items-center justify-center text-emerald-400/50 hover:text-amber-300 cursor-pointer pointer-events-auto transition" style="top: ${topPercent}%; left: ${leftPercent}%;">
                 <span class="text-xs font-bold">+</span>
               </div>
             `;
@@ -844,17 +884,24 @@
         }
         sc.innerHTML = sHtml;
 
-        // 2-7 特效按钮触发
-        const bountyTrigger = document.getElementById('bounty-27-trigger');
-        if (state.bounty27Eligible) bountyTrigger.classList.remove('hidden');
-        else bountyTrigger.classList.add('hidden');
+        // 猎兔看牌按钮触发
+        const rabbitBtn = document.getElementById('rabbit-hunt-trigger');
+        if (state.rabbitAvailable) rabbitBtn.classList.remove('hidden');
+        else rabbitBtn.classList.add('hidden');
 
-        // 提示信息
-        if (state.stage === 'END_HAND' && state.handWinners && state.handWinners.length > 0) {
-          const names = state.handWinners.map(w => `${w.name} (+${w.totalWon})`).join(', ');
+        // 2-7 特效触发
+        const bountyBtn = document.getElementById('bounty-27-trigger');
+        if (state.bounty27Eligible) bountyBtn.classList.remove('hidden');
+        else bountyBtn.classList.add('hidden');
+
+        // 状态文字
+        if (state.isPaused) {
+          document.getElementById('table-status-message').innerText = '⏸️ 房主已暂停牌局';
+        } else if (state.stage === 'END_HAND' && state.handWinners && state.handWinners.length > 0) {
+          const names = state.handWinners.map(w => `${w.name} (+${this.formatAmount(w.totalWon)})`).join(', ');
           document.getElementById('table-status-message').innerText = `🏆 赢家: ${names}`;
         } else {
-          document.getElementById('table-status-message').innerText = state.stage === 'IDLE' ? '满 2 人就座即全自动发牌...' : `第 ${state.handCount} 局 [${state.stage}]`;
+          document.getElementById('table-status-message').innerText = state.stage === 'IDLE' ? '满 2 人就座即全自动发牌...' : `第 ${state.handCount} 手 [${state.stage}]`;
         }
 
         this.updateControls(state);
@@ -866,9 +913,7 @@
           this.socket.emit('sit_down', {
             seatIndex: index,
             player: { id: this.playerId, name: this.playerName, chips: 1000, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${this.playerName}` }
-          }, res => {
-            if (res && !res.success) alert(res.msg);
-          });
+          }, res => { if (res && !res.success) alert(res.msg); });
         }
       }
 
@@ -876,23 +921,26 @@
         const mySeat = state.seats.find(s => s && s.id === this.playerId);
         const myRoleBadge = document.getElementById('my-role-badge');
         const seatMenu = document.getElementById('seat-options-menu');
-        const btnRebuy = document.getElementById('btn-rebuy');
+        const showCardsBar = document.getElementById('show-cards-bar');
+        const preActionBar = document.getElementById('pre-action-bar');
+        const btnExtraTime = document.getElementById('btn-extra-time');
 
         if (mySeat) {
           document.getElementById('my-name').innerText = mySeat.name;
-          document.getElementById('my-chips').innerText = mySeat.chips;
+          document.getElementById('my-chips-display').innerText = this.formatAmount(mySeat.chips);
           document.getElementById('my-avatar').src = mySeat.avatar;
+          document.getElementById('my-time-bank').innerText = mySeat.timeBank;
           seatMenu.classList.remove('hidden');
           document.getElementById('btn-sit-out').innerText = mySeat.sittingOut ? '回座' : '暂离';
 
           if (state.dealerSeat === mySeat.seatIndex) myRoleBadge.classList.remove('hidden');
           else myRoleBadge.classList.add('hidden');
 
-          if (mySeat.chips === 0) btnRebuy.classList.remove('hidden');
-          else btnRebuy.classList.add('hidden');
+          if (mySeat.holeCards.length > 0 && !mySeat.folded) showCardsBar.classList.remove('hidden');
+          else showCardsBar.classList.add('hidden');
         } else {
           seatMenu.classList.add('hidden');
-          btnRebuy.classList.add('hidden');
+          showCardsBar.classList.add('hidden');
         }
 
         const isMyTurn = state.currentActorSeat !== -1 && state.seats[state.currentActorSeat] && state.seats[state.currentActorSeat].id === this.playerId;
@@ -903,13 +951,21 @@
         const betSlider = document.getElementById('bet-slider');
 
         if (isMyTurn && mySeat && !mySeat.folded && !mySeat.allIn && !mySeat.sittingOut) {
+          // 轮到自己：如果之前有预选操作，瞬间执行！
+          if (this.preAction) {
+            this.executePreActionIfMatch(state, mySeat);
+            return;
+          }
+
+          preActionBar.classList.add('hidden');
           btnFold.disabled = false;
           btnCheckCall.disabled = false;
           btnRaise.disabled = false;
+          btnExtraTime.disabled = false;
           quickBetBar.classList.remove('hidden');
 
           const toCall = state.currentBet - mySeat.currentRoundBet;
-          document.getElementById('check-call-label').innerText = toCall === 0 ? '过牌 (Check)' : `跟注 ${Math.min(toCall, mySeat.chips)}`;
+          document.getElementById('check-call-label').innerText = toCall === 0 ? '过牌 (Check)' : `跟注 ${this.formatAmount(Math.min(toCall, mySeat.chips))}`;
 
           const minR = state.currentBet + state.minRaise;
           betSlider.min = minR;
@@ -919,36 +975,42 @@
           btnFold.disabled = true;
           btnCheckCall.disabled = true;
           btnRaise.disabled = true;
+          btnExtraTime.disabled = true;
           quickBetBar.classList.add('hidden');
-        }
-      }
 
-      addLogMessage(msg) {
-        const item = document.createElement('div');
-        item.innerText = msg;
+          // 没轮到自己且在局中：展示预选操作条
+          if (mySeat && !mySeat.folded && !mySeat.allIn && state.stage !== 'IDLE' && state.stage !== 'END_HAND') {
+            preActionBar.classList.remove('hidden');
+          } else {
+            preActionBar.classList.add('hidden');
+          }
+        }
       }
 
       fetchAndRenderStats() {
         const tbody = document.getElementById('leaderboard-tbody');
-        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400">加载中...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">加载中...</td></tr>';
         if (this.socket) {
           this.socket.emit('get_stats', (res) => {
-            if (!res || !res.leaderboard || res.leaderboard.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-500">暂无战绩</td></tr>';
-              return;
-            }
-            tbody.innerHTML = res.leaderboard.map((p, idx) => `
-              <tr class="hover:bg-slate-800/40">
-                <td class="py-2.5 flex items-center gap-2">
-                  <span class="w-4 text-center font-bold text-slate-500">${idx + 1}</span>
-                  <span class="font-bold text-slate-200">${p.name}</span>
-                </td>
-                <td class="py-2.5 text-center text-slate-400">${p.played || 0}</td>
-                <td class="py-2.5 text-center text-slate-300">${p.wins || 0}</td>
-                <td class="py-2.5 text-center text-emerald-400 font-bold">${p.winRate || '0%'}</td>
-                <td class="py-2.5 text-right font-bold text-amber-400">🪙 ${p.chips || 0}</td>
-              </tr>
-            `).join('');
+            if (!res || !res.leaderboard) return;
+            document.getElementById('stats-hand-count').innerText = res.handCount || 0;
+            tbody.innerHTML = res.leaderboard.map((p, idx) => {
+              const profitClass = p.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400';
+              const sign = p.netProfit >= 0 ? '+' : '';
+              return `
+                <tr class="hover:bg-slate-800/40">
+                  <td class="py-2.5 flex items-center gap-2">
+                    <span class="w-4 font-bold text-slate-500">${idx + 1}</span>
+                    <span class="font-bold text-slate-200">${p.name}</span>
+                  </td>
+                  <td class="py-2.5 text-center text-slate-400">${p.totalBuyIn}</td>
+                  <td class="py-2.5 text-center text-slate-300">${p.played || 0}</td>
+                  <td class="py-2.5 text-center text-emerald-400 font-bold">${p.winRate || '0%'}</td>
+                  <td class="py-2.5 text-right font-bold text-amber-400">${this.formatAmount(p.chips)}</td>
+                  <td class="py-2.5 text-right font-bold ${profitClass}">${sign}${p.netProfit}</td>
+                </tr>
+              `;
+            }).join('');
           });
         }
       }
@@ -958,25 +1020,55 @@
         if (this.socket) {
           this.socket.emit('get_stats', (res) => {
             if (!res || !res.recentHands || res.recentHands.length === 0) {
-              c.innerHTML = '<div class="text-center text-slate-500 py-4">暂无历史对局记录</div>';
+              c.innerHTML = '<div class="text-center text-slate-500 py-4">暂无历史对局流水</div>';
               return;
             }
             c.innerHTML = res.recentHands.map(h => `
               <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-1.5">
                 <div class="flex items-center justify-between text-[11px] text-slate-400">
-                  <span class="font-bold text-slate-200">第 ${h.handNumber} 局</span>
-                  <span>底池: <b class="text-amber-400">${h.pot}</b> 🪙</span>
+                  <span class="font-bold text-slate-200">第 ${h.handNumber} 手牌</span>
+                  <span>底池: <b class="text-amber-400 font-mono-code">${this.formatAmount(h.pot)}</b></span>
                 </div>
                 <div class="text-[11px] text-slate-300">
-                  公共牌: <b class="text-emerald-400 font-mono-code">${h.communityCards.join(' ') || '翻牌前弃牌'}</b>
+                  公共牌: <b class="text-emerald-400 font-mono-code">${h.communityCards.join(' ') || '翻前弃牌'}</b>
                 </div>
                 <div class="text-[11px] text-amber-300">
-                  赢家: ${h.winners.map(w => `${w.name} (+${w.totalWon}) [${w.description}]`).join('; ')}
+                  赢家: ${h.winners.map(w => `${w.name} (+${this.formatAmount(w.totalWon)}) [${w.description}]`).join('; ')}
                 </div>
               </div>
             `).join('');
           });
         }
+      }
+
+      showSummaryModal(summary) {
+        this.lastSummaryData = summary;
+        const tbody = document.getElementById('summary-tbody');
+        tbody.innerHTML = summary.map(p => {
+          const profitClass = p.netProfit >= 0 ? 'text-emerald-400 font-black' : 'text-rose-400 font-black';
+          const sign = p.netProfit >= 0 ? '+' : '';
+          return `
+            <tr class="hover:bg-slate-800/30">
+              <td class="py-2.5 px-3 font-bold text-slate-100">${p.name}</td>
+              <td class="py-2.5 text-center text-slate-400">${p.totalBuyIn}</td>
+              <td class="py-2.5 text-center text-amber-400 font-bold">${p.finalChips}</td>
+              <td class="py-2.5 text-right px-3 ${profitClass}">${sign}${p.netProfit}</td>
+            </tr>
+          `;
+        }).join('');
+        document.getElementById('modal-summary').classList.remove('hidden');
+        if (window.confetti) window.confetti({ particleCount: 200, spread: 120 });
+      }
+
+      copySummaryReport() {
+        if (!this.lastSummaryData) return;
+        let text = `🏆【德州聚会 Pro · 终场大结算战报】🏆\n--------------------------\n`;
+        this.lastSummaryData.forEach((p, idx) => {
+          const sign = p.netProfit >= 0 ? '+' : '';
+          text += `${idx + 1}. ${p.name} | 胜率: ${p.winRate} | 净盈亏: ${sign}${p.netProfit}\n`;
+        });
+        text += `--------------------------\n感谢各位选手的精彩对决！`;
+        navigator.clipboard.writeText(text).then(() => alert('战报已成功复制到剪贴板！可直接粘贴到微信/QQ群！')).catch(() => prompt('请复制：', text));
       }
     }
 
