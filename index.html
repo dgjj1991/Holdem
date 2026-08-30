@@ -70,60 +70,90 @@
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
     }
 
-    /* 空座矩形 */
+    /* 🪑 顶级水晶磨砂质感空座 */
     .bl-arena-empty-seat {
-      width: 52px;
-      height: 52px;
-      background-color: rgba(18, 35, 50, 0.65);
-      border: 1px solid rgba(80, 120, 150, 0.45);
-      border-radius: 10px;
-      color: #8da4b8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4);
-    }
-    .bl-arena-empty-seat:active {
-      transform: scale(0.95);
-      background-color: rgba(25, 50, 75, 0.85);
-      border-color: #f59e0b;
-      color: #fcd34d;
-    }
-
-    /* 就座玩家卡片 (头像 + 底部嵌合记分牌条) */
-    .bl-arena-player-card {
       width: 54px;
       height: 54px;
-      border-radius: 10px;
+      background: radial-gradient(circle at 35% 35%, rgba(30, 58, 85, 0.75) 0%, rgba(14, 28, 42, 0.9) 100%);
+      border: 1.5px dashed rgba(96, 165, 250, 0.45);
+      border-radius: 12px;
+      color: #93c5fd;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(59, 130, 246, 0.15);
+    }
+    .bl-arena-empty-seat:hover {
+      transform: translateY(-2px) scale(1.04);
+      border-color: #f59e0b;
+      border-style: solid;
+      color: #fde047;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6), inset 0 0 12px rgba(245, 158, 11, 0.3);
+    }
+    .bl-arena-empty-seat:active {
+      transform: scale(0.94);
+    }
+
+    /* 👤 顶级微拟物金属质感玩家席位卡片 */
+    .bl-arena-player-card {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
       position: relative;
       overflow: hidden;
-      border: 1.5px solid #486581;
-      background-color: #1b2d3e;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      border: 2px solid #3b82f6;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      transition: transform 0.15s ease;
     }
     .bl-arena-player-chip-bar {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(8, 16, 26, 0.85);
-      color: #e2e8f0;
+      background: rgba(2, 6, 23, 0.92);
+      color: #fde047;
       font-size: 10px;
       font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
+      font-weight: 800;
       text-align: center;
-      line-height: 15px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      line-height: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    /* 尖角立体动作气泡 */
+    .bubble-action-tag {
+      position: absolute;
+      left: -48px;
+      z-index: 25;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: 900;
+      white-space: nowrap;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .bubble-action-tag::after {
+      content: '';
+      position: absolute;
+      right: -4px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 4px 0 4px 4px;
+      border-style: solid;
+      border-color: transparent transparent transparent inherit;
     }
 
     /* 行动倒计时发光呼吸边框与头像中心大倒计时 */
     @keyframes actor-green-pulse {
-      0%, 100% { border-color: #22c55e; box-shadow: 0 0 12px rgba(34, 197, 94, 0.9); }
-      50% { border-color: #4ade80; box-shadow: 0 0 20px rgba(74, 222, 128, 1); }
+      0%, 100% { border-color: #22c55e; box-shadow: 0 0 14px rgba(34, 197, 94, 0.95); }
+      50% { border-color: #86efac; box-shadow: 0 0 24px rgba(74, 222, 128, 1); }
     }
     .bl-arena-acting-card {
       animation: actor-green-pulse 1.2s infinite ease-in-out;
@@ -132,16 +162,17 @@
     .bl-arena-acting-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0, 0, 0, 0.65);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      color: #4ade80;
       font-family: 'JetBrains Mono', monospace;
       font-weight: 900;
-      font-size: 14px;
+      font-size: 15px;
       z-index: 10;
+      text-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
     }
 
     /* 罗盘核心操作大圆钮 */
@@ -1868,25 +1899,25 @@
 
                 <div class="relative flex items-center justify-center">
                   
-                  <!-- 左侧行动/状态胶囊气泡 (1:1 还原原版下分/加分/秀牌/弃牌/过牌/离线/暂离) -->
+                  <!-- 左侧行动/状态胶囊气泡 (带立体尖角与高饱和渐变) -->
                   ${p.isOnline === false ? `
-                    <div class="absolute -left-10 z-20 px-1 py-0.2 rounded bg-slate-700 text-slate-300 text-[9px] font-bold shadow">
+                    <div class="bubble-action-tag bg-slate-800 text-slate-300 border-slate-600">
                       离线
                     </div>
                   ` : (p.lastAction ? `
-                    <div class="absolute -left-10 z-20 px-1 py-0.2 rounded text-[9px] font-extrabold shadow ${
-                      p.lastAction.includes('弃牌') ? 'bg-slate-300 text-slate-950' : 
-                      (p.lastAction.includes('加注') || p.lastAction.includes('加分') ? 'bg-amber-500 text-slate-950' : 
-                      (p.lastAction.includes('跟注') ? 'bg-orange-500 text-white' : 'bg-emerald-500 text-white'))
+                    <div class="bubble-action-tag ${
+                      p.lastAction.includes('弃牌') ? 'bg-slate-300 text-slate-950 border-slate-400' : 
+                      (p.lastAction.includes('加注') || p.lastAction.includes('加分') ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 border-amber-300' : 
+                      (p.lastAction.includes('跟注') ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-300' : 'bg-gradient-to-r from-emerald-500 to-teal-400 text-white border-emerald-300'))
                     }">
                       ${p.lastAction.split(' ')[0]}
                     </div>
                   ` : (p.sittingOut ? `
-                    <div class="absolute -left-10 z-20 px-1 py-0.2 rounded bg-amber-500 text-slate-950 text-[9px] font-bold shadow">
+                    <div class="bubble-action-tag bg-amber-500 text-slate-950 border-amber-300">
                       暂离
                     </div>
                   ` : (state.stage === 'IDLE' ? `
-                    <div class="absolute -left-10 z-20 px-1 py-0.2 rounded bg-slate-300 text-slate-950 text-[9px] font-bold shadow">
+                    <div class="bubble-action-tag bg-slate-400 text-slate-950 border-slate-300">
                       等待
                     </div>
                   ` : '')))}
@@ -1904,7 +1935,7 @@
                   </div>
 
                   <!-- 庄家 D 标 -->
-                  ${isD ? '<span class="absolute -bottom-1 -left-1 w-4 h-4 rounded-full badge-dealer text-[9px] font-black flex items-center justify-center shadow">D</span>' : ''}
+                  ${isD ? '<span class="absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 text-[9px] font-black flex items-center justify-center shadow-lg border border-white">D</span>' : ''}
 
                   <!-- 🎴 关键：手牌直接立在头像右侧 (清晰、完全不遮挡，比牌时公开全场亮牌) -->
                   ${p.holeCards && p.holeCards.length >= 2 && (isSelf || p.holeCards.some(c => !c.isHidden)) ? `
@@ -1951,8 +1982,9 @@
             `;
           } else {
             sHtml += `
-              <div onclick="app.sitDownAtSeat(${i})" class="bl-arena-empty-seat absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto" style="top: ${coord.top}; left: ${coord.left};">
-                空座
+              <div onclick="app.sitDownAtSeat(${i})" class="bl-arena-empty-seat absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto select-none" style="top: ${coord.top}; left: ${coord.left};">
+                <span class="text-lg leading-none opacity-90">🪑</span>
+                <span class="text-[9px] font-black tracking-wider text-blue-300/90 leading-none mt-0.5">空座</span>
               </div>
             `;
           }
