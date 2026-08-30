@@ -365,12 +365,14 @@ const BOT_NAMES = [
 
 class PokerBot {
   static decide(table, bot) {
+    if (!bot || !bot.holeCards || bot.holeCards.length < 2) return { action: 'check', amount: 0 };
     const toCall = Math.max(0, table.currentBet - bot.currentRoundBet);
     const canCheck = toCall === 0;
     const chips = bot.chips;
 
     if (table.stage === 'PREFLOP') {
       const [c1, c2] = bot.holeCards;
+      if (!c1 || !c2) return { action: 'check', amount: 0 };
       const r1 = Math.max(c1.rank, c2.rank);
       const r2 = Math.min(c1.rank, c2.rank);
       const isPair = r1 === r2;
@@ -492,7 +494,10 @@ class PokerTable {
       const existingSeat = this.seats[existingIdx];
       existingSeat.name = player.name || existingSeat.name;
       existingSeat.avatar = player.avatar || existingSeat.avatar;
+      existingSeat.isOnline = true;
+      existingSeat.sittingOut = false;
       this.notify();
+      this.checkAutoStart();
       return { success: true, player: existingSeat };
     }
 
@@ -1013,7 +1018,9 @@ class PokerTable {
       this.recordPlayerStageAction(p.id, this.stage, 'C', `跟注 ${callAmt}`, callAmt);
       this.log(`玩家 [${p.name}] ${p.lastAction}`);
     } else if (act === 'raise' || act === 'bet') {
-      const target = Math.max(parseInt(amount, 10), this.currentBet + this.minRaise);
+      const parsedAmt = parseInt(amount, 10);
+      const minTarget = this.currentBet + this.minRaise;
+      const target = (!isNaN(parsedAmt) && parsedAmt >= minTarget) ? parsedAmt : minTarget;
       const need = target - p.currentRoundBet;
       if (need >= p.chips) return this.playerAction(playerId, 'allIn');
 
@@ -1148,14 +1155,22 @@ class PokerTable {
     this.stage = 'SHOWDOWN';
     const inHand = this.getInHandSeats();
 
-    const evaluated = inHand.map(it => {
+    inHand.forEach(it => {
       const all = [...it.p.holeCards, ...this.communityCards];
-      const b = evaluateHand(all);
-      it.p.bestHand = b;
-      return { id: it.p.id, name: it.p.name, totalBet: it.p.totalBet, folded: it.p.folded, bestHand: b, is27Hand: it.p.is27Hand, autoMuck: it.p.autoMuck };
+      it.p.bestHand = evaluateHand(all);
     });
 
-    const payouts = PotManager.distributePots(evaluated, this.pot);
+    const allContributors = this.seats.filter(p => p && p.totalBet > 0).map(p => ({
+      id: p.id,
+      name: p.name,
+      totalBet: p.totalBet,
+      folded: p.folded,
+      bestHand: p.bestHand || null,
+      is27Hand: p.is27Hand,
+      autoMuck: p.autoMuck
+    }));
+
+    const payouts = PotManager.distributePots(allContributors);
     const winningIds = new Set(payouts.map(p => p.playerId));
 
     this.seats.forEach(p => {
@@ -1171,7 +1186,7 @@ class PokerTable {
     this.handWinners = payouts.map(w => {
       const p = this.seats.find(s => s && s.id === w.playerId);
       if (p) p.chips += w.totalWon;
-      const info = evaluated.find(e => e.id === w.playerId);
+      const info = allContributors.find(e => e.id === w.playerId);
 
       if (info && info.is27Hand) {
         this.bounty27Winners.push(w.playerId);
