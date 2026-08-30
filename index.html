@@ -412,16 +412,16 @@
     <!-- 1:1 原版 9 座绝对坐标环形分布容器 -->
     <div id="seats-container" class="absolute inset-0 pointer-events-none"></div>
 
-    <!-- ================= 🎯 1:1 原版桌面空隙弧形半圆罗盘操作区 (轮到自己时展现) ================= -->
-    <div id="compass-action-area" class="hidden absolute left-1/2 -translate-x-1/2 bottom-20 z-30 pointer-events-auto flex flex-col items-center">
+    <!-- ================= 🎯 1:1 原版桌面空隙弧形半圆罗盘操作区 (轮到自己时展现，黄金中位绝无遮挡) ================= -->
+    <div id="compass-action-area" class="hidden absolute left-1/2 -translate-x-1/2 bottom-[136px] z-30 pointer-events-auto flex flex-col items-center select-none">
       
       <!-- 精准加注滑动条微调弹层 (点击精准加分时展开) -->
-      <div id="panel-precise-raise" class="hidden mb-2 bg-slate-950/90 border border-slate-700 p-2.5 rounded-2xl shadow-2xl w-64 space-y-1.5">
+      <div id="panel-precise-raise" class="hidden mb-2 bg-slate-950/95 border border-slate-700 p-2.5 rounded-2xl shadow-2xl w-64 space-y-1.5 backdrop-blur">
         <div class="flex justify-between text-xs text-slate-300 font-bold">
           <span>精准加注:</span>
           <span id="precise-bet-val" class="text-amber-400 font-mono-code">40 🪙</span>
         </div>
-        <input type="range" id="precise-bet-slider" min="20" max="1000" step="10" value="40" oninput="app.onPreciseSliderChange(this.value)" class="w-full h-2 bg-slate-800 rounded-lg">
+        <input type="range" id="precise-bet-slider" min="20" max="1000" step="10" value="40" oninput="app.onPreciseSliderChange(this.value)" class="w-full h-2 bg-slate-800 rounded-lg accent-amber-400">
         <button onclick="app.performAction('raise')" class="w-full py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs">
           确定加注
         </button>
@@ -1574,7 +1574,7 @@
           { top: '70%', left: '12%' },  // 5: 左侧下
           { top: '48%', left: '12%' },  // 6: 左侧中
           { top: '25%', left: '12%' },  // 7: 左侧上
-          { top: '88%', left: '50%' }   // 8: 正底部专属主座 (Hero)
+          { top: '91%', left: '50%' }   // 8: 正底部专属主座 (Hero)
         ];
 
         for (let i = 0; i < 9; i++) {
