@@ -25,11 +25,8 @@ const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
-});
-
-function findIndexPath() {
+let cachedHtml = '';
+function getIndexContent() {
   const possiblePaths = [
     path.join(__dirname, 'index.html'),
     path.join(process.cwd(), 'index.html'),
@@ -39,19 +36,32 @@ function findIndexPath() {
     path.join(process.cwd(), 'texas-holdem/index.html')
   ];
   for (const p of possiblePaths) {
-    if (fs.existsSync(p)) return p;
+    try {
+      if (fs.existsSync(p)) {
+        cachedHtml = fs.readFileSync(p, 'utf8');
+        return cachedHtml;
+      }
+    } catch (e) {}
   }
-  return null;
+  return cachedHtml;
 }
 
-app.use(express.static(__dirname, { etag: false, maxAge: 0 }));
-app.use(express.static(process.cwd(), { etag: false, maxAge: 0 }));
+// 启动时预读
+getIndexContent();
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
+});
 
 app.get('*', (req, res) => {
   if (req.path.startsWith('/socket.io') || req.path.startsWith('/health')) return;
-  const p = findIndexPath();
-  if (p) res.sendFile(p);
-  else res.status(200).send('Texas Holdem Server is running.');
+  const html = getIndexContent();
+  if (html) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.status(200).send(html);
+  } else {
+    res.status(200).send('Texas Holdem Server is running.');
+  }
 });
 
 // ================= 扑克引擎与四色牌定义 =================
