@@ -1109,8 +1109,33 @@
         const roomQuery = params.get('room');
         if (roomQuery) {
           document.getElementById('input-room-code').value = roomQuery.trim();
+          // 如果好友通过链接进入，弹出好友昵称设置弹窗
+          setTimeout(() => {
+            const guestName = prompt(`【德扑之星】您正在加入房间 [${roomQuery.trim()}]\n请输入您的玩家昵称:`, this.playerName !== '菠萝无敌' ? this.playerName : '选手_' + Math.floor(Math.random()*900 + 100));
+            if (guestName && guestName.trim()) {
+              this.playerName = guestName.trim();
+              this.saveUserSession();
+              document.getElementById('input-player-name').value = this.playerName;
+            }
+            this.joinOnlineRoom();
+          }, 300);
         }
         if (window.lucide) lucide.createIcons();
+      }
+
+      changePlayerName() {
+        const newName = prompt('请输入您的新玩家昵称:', this.playerName);
+        if (newName && newName.trim()) {
+          this.playerName = newName.trim();
+          this.saveUserSession();
+          document.getElementById('input-player-name').value = this.playerName;
+          if (this.socket) {
+            this.socket.emit('update_name', { name: this.playerName }, (res) => {
+              if (res && res.success) this.showToast(`昵称已修改为 [${this.playerName}]`, 'success');
+              else if (res) this.showToast(res.msg, 'error');
+            });
+          }
+        }
       }
 
       switchLobbyMode(mode) {
@@ -1547,7 +1572,10 @@
               <div class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-auto transition-all" style="top: ${coord.top}; left: ${coord.left};">
                 
                 <!-- 昵称 -->
-                <div class="text-[10px] font-bold text-slate-200 truncate max-w-[70px] mb-0.5">${p.name}</div>
+                <div onclick="${isSelf ? 'app.changePlayerName()' : ''}" class="text-[10px] font-bold text-slate-200 truncate max-w-[85px] mb-0.5 flex items-center gap-0.5 ${isSelf ? 'cursor-pointer hover:text-amber-400' : ''}">
+                  <span>${p.name}</span>
+                  ${isSelf ? '<span class="text-[8px] text-amber-400">✏️</span>' : ''}
+                </div>
 
                 <div class="relative flex items-center justify-center">
                   

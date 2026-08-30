@@ -392,7 +392,9 @@ class PokerTable {
   notify() { if (this.onStateChange) this.onStateChange(this); }
 
   sitDown(idx, player) {
-    if (this.isGameEnded) return { success: false, msg: '本场比赛已结算结束' };
+    if (this.isGameEnded && this.stage === 'IDLE') {
+      this.isGameEnded = false;
+    }
     if (idx < 0 || idx >= this.maxSeats) return { success: false, msg: '座位索引无效' };
     
     // 如果该玩家已经在桌上某个座位，自动更新绑定该座位
@@ -469,6 +471,23 @@ class PokerTable {
     this.log(`🪙 玩家 [${p.name}] 成功补充带入记分牌 +${addVal} (当前记分牌: ${p.chips})`);
     this.notify();
     return { success: true, newChips: p.chips };
+  }
+
+  updatePlayerName(playerId, newName) {
+    const cleanName = (newName || '').trim();
+    if (!cleanName) return { success: false, msg: '昵称不能为空' };
+    const p = this.seats.find(s => s && s.id === playerId);
+    if (p) {
+      p.name = cleanName;
+      p.avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanName}`;
+    }
+    if (this.playerStatsMap[playerId]) {
+      this.playerStatsMap[playerId].name = cleanName;
+      this.playerStatsMap[playerId].avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanName}`;
+    }
+    this.log(`✏️ 玩家更改昵称为: [${cleanName}]`);
+    this.notify();
+    return { success: true, newName: cleanName };
   }
 
   standUp(playerId) {
@@ -1292,6 +1311,20 @@ io.on('connection', socket => {
       sender: senderName || '玩家',
       color: ['#f59e0b', '#38bdf8', '#34d399', '#f43f5e', '#a855f7'][Math.floor(Math.random() * 5)]
     });
+  });
+
+  socket.on('update_name', ({ name }, callback) => {
+    if (!currentRoomId || !currentPlayerId) {
+      if (callback) callback({ success: false, msg: '未在房间中' });
+      return;
+    }
+    const room = rooms.get(currentRoomId);
+    if (!room) {
+      if (callback) callback({ success: false, msg: '房间不存在' });
+      return;
+    }
+    const res = room.table.updatePlayerName(currentPlayerId, name);
+    if (callback) callback(res);
   });
 
   // 处理玩家下注行动
