@@ -417,6 +417,11 @@
         <div id="showdown-winner-text" class="text-xs font-black text-amber-300">🏆 菠萝无敌 赢得 800 🪙</div>
         <div id="showdown-hand-desc" class="text-[11px] text-slate-200 font-bold">牌型: 顺子</div>
         <div class="text-[9px] text-emerald-400 font-mono-code pt-0.5 border-t border-slate-800">⏳ 正在看牌与比牌结算中 (7s)...</div>
+        <div id="btn-show-my-cards-box" class="hidden pt-1">
+          <button id="btn-show-my-cards" onclick="app.showMyCards()" class="px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 text-[11px] font-black shadow border border-white">
+            👀 亮出手牌向全桌展示
+          </button>
+        </div>
       </div>
 
       <!-- 5 张四色公共牌槽位 -->
@@ -1617,6 +1622,18 @@
         });
       }
 
+      showMyCards(which = 'both') {
+        if (this.socket) {
+          this.socket.emit('show_cards', { which: which }, (res) => {
+            if (res && res.success) {
+              this.showToast('已向全桌展示手牌！', 'success');
+              const box = document.getElementById('btn-show-my-cards-box');
+              if (box) box.classList.add('hidden');
+            }
+          });
+        }
+      }
+
       hostStartOrResume() {
         if (this.socket) this.socket.emit('toggle_pause', (res) => {
           if (res && res.success) this.showToast(res.isPaused ? '牌局已暂停' : '牌局已开始！', 'success');
@@ -1842,6 +1859,17 @@
           resultBanner.classList.add('hidden');
         }
 
+        const mySeat = state.seats.find(s => s && s.id === this.playerId);
+        const canVoluntaryShow = (state.stage === 'END_HAND' || state.stage === 'SHOWDOWN') && mySeat && !mySeat.folded;
+        const showBox = document.getElementById('btn-show-my-cards-box');
+        if (showBox) {
+          if (canVoluntaryShow && (!mySeat.revealedCards || (!mySeat.revealedCards[0] && !mySeat.revealedCards[1]))) {
+            showBox.classList.remove('hidden');
+          } else {
+            showBox.classList.add('hidden');
+          }
+        }
+
         // 四色公共牌 (带金色高亮中牌边框)
         const cc = document.getElementById('community-cards');
         if (state.stage !== 'IDLE' && state.communityCards.length > 0) {
@@ -2001,7 +2029,6 @@
         else bountyBtn.classList.add('hidden');
 
         // 1:1 原版罗盘行动操作区
-        const mySeat = state.seats.find(s => s && s.id === this.playerId);
         const isMyTurn = state.currentActorSeat !== -1 && state.seats[state.currentActorSeat] && state.seats[state.currentActorSeat].id === this.playerId;
 
         if (isMyTurn && mySeat && !mySeat.folded && !mySeat.allIn && !mySeat.sittingOut) {

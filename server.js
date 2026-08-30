@@ -1184,13 +1184,15 @@ class PokerTable {
         const noMoreAction = inHand.length >= 2 && inHand.filter(it => !it.p.allIn).length <= 1;
         const isShowdown = this.stage === 'SHOWDOWN';
         const isAllInRunout = (this.stage === 'FLOP' || this.stage === 'TURN' || this.stage === 'RIVER') && noMoreAction && inHand.some(it => it.p.id === p.id);
-        const isWinnerAtEnd = this.stage === 'END_HAND' && this.handWinners && this.handWinners.some(w => w.playerId === p.id);
+        const isShowdownWinner = isShowdown && this.handWinners && this.handWinners.some(w => w.playerId === p.id);
+        const isPlayerRevealedLeft = p.revealedCards && p.revealedCards[0];
+        const isPlayerRevealedRight = p.revealedCards && p.revealedCards[1];
 
-        // 仅在属于本人、主动秀牌、最终摊牌比牌、或者全下跑马阶段时才公开
-        const canRevealLeft = isSelf || (p.revealedCards && p.revealedCards[0]) || (isShowdown && !p.folded) || isAllInRunout || isWinnerAtEnd;
-        const canRevealRight = isSelf || (p.revealedCards && p.revealedCards[1]) || (isShowdown && !p.folded) || isAllInRunout || isWinnerAtEnd;
+        // 仅在属于本人、主动秀牌、最终比牌获胜、或全下跑马时才公开；对手全弃牌获胜默认不秀牌保密
+        const canRevealLeft = isSelf || isPlayerRevealedLeft || isShowdownWinner || isAllInRunout || (isShowdown && !p.autoMuck && !p.folded);
+        const canRevealRight = isSelf || isPlayerRevealedRight || isShowdownWinner || isAllInRunout || (isShowdown && !p.autoMuck && !p.folded);
 
-        const realHandDesc = (isSelf || isShowdown || isWinnerAtEnd)
+        const realHandDesc = (isSelf || isShowdownWinner || isAllInRunout || (isShowdown && !p.autoMuck))
           ? getHandDescription(p.holeCards, this.communityCards)
           : '';
 
@@ -1436,6 +1438,14 @@ io.on('connection', socket => {
       return;
     }
     const res = room.table.updatePlayerName(currentPlayerId, name);
+    if (callback) callback(res);
+  });
+
+  socket.on('show_cards', ({ which }, callback) => {
+    if (!currentRoomId || !currentPlayerId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+    const res = room.table.showCards(currentPlayerId, which || 'both');
     if (callback) callback(res);
   });
 
