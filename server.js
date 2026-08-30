@@ -1043,6 +1043,9 @@ class PokerTable {
     clearInterval(this.timerInterval);
     this.notify();
 
+    // 如果是摊牌比牌，给玩家 7.5 秒充裕时间看牌与复盘；弃牌获胜给 4.5 秒
+    const waitTime = this.stage === 'SHOWDOWN' || (this.handWinners && this.handWinners.some(w => w.description !== '对手全部弃牌')) ? 7500 : 4500;
+
     setTimeout(() => {
       if (this.isPaused || this.isGameEnded) return;
       const active = this.getActiveSeats();
@@ -1053,7 +1056,7 @@ class PokerTable {
         this.log('等待更多玩家就绪后全自动发牌...');
         this.notify();
       }
-    }, 3800);
+    }, waitTime);
   }
 
   getPublicState(viewerId) {
@@ -1087,8 +1090,10 @@ class PokerTable {
       seats: this.seats.map((p, idx) => {
         if (!p) return null;
         const isSelf = p.id === viewerId;
-        const revealLeft = isSelf || p.revealedCards[0] || (this.stage === 'SHOWDOWN' && !p.autoMuck);
-        const revealRight = isSelf || p.revealedCards[1] || (this.stage === 'SHOWDOWN' && !p.autoMuck);
+        const isWinner = this.handWinners && this.handWinners.some(w => w.playerId === p.id);
+        const isShowdown = this.stage === 'SHOWDOWN' || this.stage === 'END_HAND';
+        const revealLeft = isSelf || isWinner || p.revealedCards[0] || (isShowdown && !p.folded);
+        const revealRight = isSelf || isWinner || p.revealedCards[1] || (isShowdown && !p.folded);
         return {
           seatIndex: idx,
           id: p.id,
@@ -1105,6 +1110,7 @@ class PokerTable {
           timeBank: p.timeBank,
           autoMuck: p.autoMuck,
           lastAction: p.lastAction,
+          handDescription: p.bestHand ? p.bestHand.description : '',
           is27: isSelf ? p.is27Hand : false,
           revealedCards: p.revealedCards,
           holeCards: [

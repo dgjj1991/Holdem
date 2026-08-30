@@ -361,6 +361,13 @@
         </div>
       </div>
 
+      <!-- 🏆 局末获胜总结与看牌复盘大横幅 (解决不知道发生了什么的问题) -->
+      <div id="showdown-result-banner" class="hidden mb-2 z-30 pointer-events-auto bg-slate-950/95 border border-amber-500/60 rounded-2xl px-4 py-2 shadow-2xl backdrop-blur text-center space-y-0.5 max-w-xs">
+        <div id="showdown-winner-text" class="text-xs font-black text-amber-300">🏆 菠萝无敌 赢得 800 🪙</div>
+        <div id="showdown-hand-desc" class="text-[11px] text-slate-200 font-bold">牌型: 顺子</div>
+        <div class="text-[9px] text-emerald-400 font-mono-code pt-0.5 border-t border-slate-800">⏳ 正在看牌与比牌结算中 (7s)...</div>
+      </div>
+
       <!-- 5 张四色公共牌槽位 -->
       <div id="community-cards" class="hidden flex items-center gap-1.5 z-20 min-h-[58px]"></div>
 
@@ -1522,6 +1529,17 @@
           potBox.classList.add('hidden');
         }
 
+        // 局末获胜总结与看牌大横幅
+        const resultBanner = document.getElementById('showdown-result-banner');
+        if ((state.stage === 'END_HAND' || state.stage === 'SHOWDOWN') && state.handWinners && state.handWinners.length > 0) {
+          resultBanner.classList.remove('hidden');
+          const w = state.handWinners[0];
+          document.getElementById('showdown-winner-text').innerText = `🏆 [${w.name}] 赢得底池 +${w.totalWon.toLocaleString()} 🪙`;
+          document.getElementById('showdown-hand-desc').innerText = `获胜牌型: ${w.description || '对手弃牌'}`;
+        } else {
+          resultBanner.classList.add('hidden');
+        }
+
         // 四色公共牌 (带金色高亮中牌边框)
         const cc = document.getElementById('community-cards');
         if (state.stage !== 'IDLE' && state.communityCards.length > 0) {
@@ -1613,19 +1631,25 @@
                   <!-- 庄家 D 标 -->
                   ${isD ? '<span class="absolute -bottom-1 -left-1 w-4 h-4 rounded-full badge-dealer text-[9px] font-black flex items-center justify-center shadow">D</span>' : ''}
 
-                  <!-- 🎴 关键：手牌直接立在头像右侧 (清晰、完全不遮挡) -->
-                  ${(isSelf || p.showCards) && p.holeCards.length >= 2 ? `
+                  <!-- 🎴 关键：手牌直接立在头像右侧 (清晰、完全不遮挡，比牌时公开全场亮牌) -->
+                  ${p.holeCards && p.holeCards.length >= 2 && (isSelf || p.holeCards.some(c => !c.isHidden)) ? `
                     <div class="ml-1.5 flex flex-col items-center">
                       <div class="flex items-center gap-1">
-                        ${p.holeCards.map(c => `
-                          <div class="w-7 h-10 md:w-8 md:h-12 bg-white rounded shadow-md border border-slate-300 flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} select-none">
+                        ${p.holeCards.map(c => c.isHidden ? `
+                          <div class="w-7 h-10 md:w-8 md:h-12 bg-indigo-950 rounded shadow-md border border-indigo-500/60 flex items-center justify-center text-xs text-indigo-300 font-bold select-none">
+                            ♠
+                          </div>
+                        ` : `
+                          <div class="w-7 h-10 md:w-8 md:h-12 bg-white rounded shadow-md border ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'border-amber-400 ring-2 ring-amber-400' : 'border-slate-300'} flex flex-col justify-between p-0.5 font-bold ${this.getCardColorClass(c.suit)} select-none">
                             <div class="text-[9px] leading-none font-mono-code">${c.label}</div>
                             <div class="text-xs text-center leading-none">${c.symbol}</div>
                             <div class="text-[9px] leading-none text-right font-mono-code">${c.label}</div>
                           </div>
                         `).join('')}
                       </div>
-                      <div class="text-[9px] font-bold text-slate-300 mt-0.5">${p.handDescription || '高牌'}</div>
+                      <div class="text-[9px] font-black ${state.handWinners && state.handWinners.some(w => w.playerId === p.id) ? 'text-amber-400 font-extrabold' : 'text-slate-300'} mt-0.5">
+                        ${p.handDescription || '高牌'}
+                      </div>
                     </div>
                   ` : ''}
 
